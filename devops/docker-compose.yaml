@@ -21,8 +21,8 @@ services:
   spring:
     image: sp
     build:
-      context: .
-      dockerfile: nonroot-multistage.Dockerfile
+      context: /tmp/project
+      dockerfile: /tmp/project/devops/nonroot-multistage.Dockerfile
     ports:
       - "8080:8080"
     depends_on:
