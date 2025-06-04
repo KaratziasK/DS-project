@@ -10,7 +10,8 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:21-alpine-3.21
 
 LABEL maintainer="karatziask"
-WORKDIR /app
+# /app (Εσωτερικός φάκελος του image)
+WORKDIR /app    
 
 RUN apk update && apk add curl
 # Set non-root user
