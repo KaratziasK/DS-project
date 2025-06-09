@@ -45,6 +45,8 @@ public class UserController {
 
         if (userBindingResult.hasErrors() || clientBindingResult.hasErrors()) {
             System.out.println("Error");
+            userBindingResult.getAllErrors().forEach(System.out::println);
+            clientBindingResult.getAllErrors().forEach(System.out::println);
             return "auth/register_client";
         }
 
