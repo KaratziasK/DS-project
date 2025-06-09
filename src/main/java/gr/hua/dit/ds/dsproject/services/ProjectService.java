@@ -2,7 +2,6 @@ package gr.hua.dit.ds.dsproject.services;
 
 
 import gr.hua.dit.ds.dsproject.entities.*;
-import gr.hua.dit.ds.dsproject.repositories.AssignmentRepository;
 import gr.hua.dit.ds.dsproject.repositories.ProjectRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;

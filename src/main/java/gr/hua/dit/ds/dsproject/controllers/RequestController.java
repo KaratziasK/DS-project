@@ -31,7 +31,6 @@ public class RequestController {
 
     @PostMapping("/rejectedRequests/{requestId}")
     public String deleteRequest(@PathVariable int requestId, Model model){
-        Request request = requestService.getRequest(requestId);
         requestService.deleteRequest(requestId);
         model.addAttribute("rejectedRequests", requestService.getRejectedRequests());
         return "request/rejectedRequests";
