@@ -45,7 +45,7 @@ by verifying users and managing assignments.
 ### 1. Installation & Setup
 - Clone the Repository
 ```sh
-git clone https://github.com/chrisklmt/DS-Project.git
+git clone https://github.com/KaratziasK/DS-project.git
 cd /to/project/folder
 ```
 
