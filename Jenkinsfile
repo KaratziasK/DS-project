@@ -6,7 +6,7 @@ environment {
         DOCKER_TOKEN=credentials('docker-push-secret')
         DOCKER_USER='Kyriakos'
         DOCKER_SERVER='ghcr.io'
-        DOCKER_PREFIX='ghcr.io/KaratziasK/DS-project'
+        DOCKER_PREFIX='ghcr.io/KaratziasK/ds-project'
     }
 
 
