@@ -15,7 +15,7 @@ stages {
 
     stage('run ansible pipeline') {
         steps {
-            build job: 'job-2'
+            build job: 'job-1'
         }
     }
 
