@@ -23,7 +23,7 @@ stages {
         steps {
             sh '''
                 echo "Start testing"
-                ./mvnw test
+                mvn test
             '''
         }
     }
