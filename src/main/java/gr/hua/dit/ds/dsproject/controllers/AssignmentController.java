@@ -30,7 +30,7 @@ public class AssignmentController {
     @GetMapping("")
     public String showAssignments(Model model){
         model.addAttribute("assignments", assignmentService.getAssignments());
-        return "assignment/assignments";
+        return "assignment/assignments"; 
     }
 
     @PostMapping("/assignFreelancer/{requestId}")
