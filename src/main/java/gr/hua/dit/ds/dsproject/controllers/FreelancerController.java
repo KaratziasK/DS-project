@@ -2,137 +2,158 @@ package gr.hua.dit.ds.dsproject.controllers;
 
 import gr.hua.dit.ds.dsproject.entities.Freelancer;
 import gr.hua.dit.ds.dsproject.entities.Project;
+import gr.hua.dit.ds.dsproject.entities.Request;
+import gr.hua.dit.ds.dsproject.entities.Assignment;
 import gr.hua.dit.ds.dsproject.services.FreelancerService;
 import gr.hua.dit.ds.dsproject.services.ProjectService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-@Controller
-@RequestMapping("/freelancer")
+@RestController
+@RequestMapping("/api/freelancers")
 public class FreelancerController {
+
     private final FreelancerService freelancerService;
     private final ProjectService projectService;
 
-    public FreelancerController(FreelancerService freelancerService, ProjectService projectService) {
+    public FreelancerController(FreelancerService freelancerService,
+                                ProjectService projectService) {
         this.freelancerService = freelancerService;
         this.projectService = projectService;
     }
 
+    // ================== Admin: λίστα freelancers ==================
+
     @Secured("ROLE_ADMIN")
     @GetMapping("")
-    public String showFreelancers(Model model){
-        model.addAttribute("freelancers", freelancerService.getFreelancers());
-        return "freelancer/freelancers";
+    public ResponseEntity<List<Freelancer>> getFreelancers() {
+        return ResponseEntity.ok(freelancerService.getFreelancers());
     }
 
     @Secured("ROLE_ADMIN")
     @GetMapping("/not-verified")
-    public String showNotVerifiedFreelancers(Model model){
-        model.addAttribute("freelancers", freelancerService.getNotVerifiedFreelancer());
-        return "freelancer/notVerifiedFreelancers";
+    public ResponseEntity<List<Freelancer>> getNotVerifiedFreelancers() {
+        return ResponseEntity.ok(freelancerService.getNotVerifiedFreelancer());
     }
 
     @Secured("ROLE_ADMIN")
-    @PostMapping("/verify/{freelancer_id}")
-    public String changeVerifiedStatus(@PathVariable int freelancer_id,Model model){
-        Freelancer freelancer = freelancerService.getFreelancer(freelancer_id);
+    @PostMapping("/{freelancerId}/verify")
+    public ResponseEntity<Freelancer> verifyFreelancer(@PathVariable("freelancerId") int freelancerId) {
+        Freelancer freelancer = freelancerService.getFreelancer(freelancerId);
         freelancer.setVerified(true);
         freelancerService.saveFreelancer(freelancer);
-        model.addAttribute("freelancers", freelancerService.getNotVerifiedFreelancer());
-        return "freelancer/notVerifiedFreelancers";
+        return ResponseEntity.ok(freelancer);
     }
 
     @Secured("ROLE_ADMIN")
-    @PostMapping("/delete/{freelancer_id}")
-    public String deleteFreelancer(@PathVariable int freelancer_id,Model model){
-
-        freelancerService.deleteFreelancer(freelancer_id);
-        model.addAttribute("freelancers", freelancerService.getFreelancers());
-        return "freelancer/freelancers";
+    @DeleteMapping("/{freelancerId}")
+    public ResponseEntity<Void> deleteFreelancer(@PathVariable("freelancerId") int freelancerId) {
+        freelancerService.deleteFreelancer(freelancerId);
+        return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/new")
-    public String addFreelancer(Model model){
-        Freelancer freelancer = new Freelancer();
-        model.addAttribute("freelancer", freelancer);
-        return "freelancer/freelancer";
-    }
+    // ================== Admin: δημιουργία freelancer (αντί για /new form) ==================
 
-    @PostMapping("/new")
-    public String saveFreelancer(@Valid @ModelAttribute("freelancer") Freelancer freelancer,
-                              BindingResult theBindingResult, Model model ){
-        if (theBindingResult.hasErrors()) {
-            System.out.println("error");
-            return "freelancer/freelancer";
-        } else {
-            freelancerService.saveFreelancer(freelancer);
-            model.addAttribute("freelancers", freelancerService.getFreelancers());
-            return "freelancer/freelancers";
+    @Secured("ROLE_ADMIN")
+    @PostMapping("")
+    public ResponseEntity<?> createFreelancer(
+            @Valid @RequestBody Freelancer freelancer,
+            BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            return buildValidationErrorResponse(bindingResult);
         }
+
+        freelancerService.saveFreelancer(freelancer);
+        return ResponseEntity.status(HttpStatus.CREATED).body(freelancer);
     }
+
+    // ================== Freelancer: διαθέσιμα projects ==================
 
     @Secured("ROLE_FREELANCER")
     @GetMapping("/projects")
-    public String showProjects(Model model) {
+    public ResponseEntity<Map<String, Object>> getProjectsForFreelancer() {
         Freelancer freelancer = freelancerService.getCurrentFreelancer();
         List<Project> acceptedProjects = projectService.getAcceptedProjects();
-        List<Project> requestedProjects = projectService.getRequestedProjects(acceptedProjects,freelancer.getRequests());
-        List<Project> notRequestedNotAssignedProjects = projectService.getNotRequestedAndUnassignedProjects(acceptedProjects, requestedProjects);
-        List<Project> notOutdated = projectService.getProjectNotOutDated(notRequestedNotAssignedProjects);
+        List<Project> requestedProjects =
+                projectService.getRequestedProjects(acceptedProjects, freelancer.getRequests());
+        List<Project> notRequestedNotAssignedProjects =
+                projectService.getNotRequestedAndUnassignedProjects(acceptedProjects, requestedProjects);
+        List<Project> notOutdated =
+                projectService.getProjectNotOutDated(notRequestedNotAssignedProjects);
 
-        model.addAttribute("notRequestedProjects", notOutdated);
-        model.addAttribute("freelancerVerified", freelancer.getVerified());
-        return "project/projectsForFreelancer";
+        Map<String, Object> body = new HashMap<>();
+        body.put("notRequestedProjects", notOutdated);
+        body.put("freelancerVerified", freelancer.getVerified());
+
+        return ResponseEntity.ok(body);
     }
+
+    // ================== Freelancer: τα δικά του requests ==================
 
     @Secured("ROLE_FREELANCER")
     @GetMapping("/requests")
-    public String showRequests(Model model) {
+    public ResponseEntity<List<Request>> getMyRequests() {
         Freelancer freelancer = freelancerService.getCurrentFreelancer();
-
-        model.addAttribute("freelancerRequests", freelancer.getRequests());
-        return "request/myrequests";
+        return ResponseEntity.ok(freelancer.getRequests());
     }
+
+    // ================== Freelancer: assignments ==================
 
     @Secured("ROLE_FREELANCER")
     @GetMapping("/my-assignments")
-    public String showMyAssignments(Model model) {
+    public ResponseEntity<List<Assignment>> getMyAssignments() {
         Freelancer freelancer = freelancerService.getCurrentFreelancer();
-        model.addAttribute("assignments", freelancer.getAssignments());
-        return "assignment/myassignments";
+        return ResponseEntity.ok(freelancer.getAssignments());
     }
+
+    // ================== Freelancer: profile ==================
 
     @Secured("ROLE_FREELANCER")
     @GetMapping("/my-profile")
-    public String showProfile(Model model) {
-        Freelancer freelancer = freelancerService.getFreelancer(freelancerService.getCurrentFreelancer().getId());
-        model.addAttribute("freelancer", freelancer);
-        return "freelancer/my-profile";
+    public ResponseEntity<Freelancer> getMyProfile() {
+        Freelancer freelancer =
+                freelancerService.getFreelancer(freelancerService.getCurrentFreelancer().getId());
+        return ResponseEntity.ok(freelancer);
     }
 
     @Secured("ROLE_FREELANCER")
-    @GetMapping("/edit-profile")
-    public String editProfile(Model model) {
-        Freelancer freelancer = freelancerService.getFreelancer(freelancerService.getCurrentFreelancer().getId());
-        model.addAttribute("freelancer", freelancer);
-        return "freelancer/edit-profile";
-    }
+    @PutMapping("/my-profile")
+    public ResponseEntity<?> updateMyProfile(
+            @Valid @RequestBody Freelancer freelancer,
+            BindingResult bindingResult) {
 
-    @Secured("ROLE_FREELANCER")
-    @PostMapping("/edit-profile")
-    public String updateProfile(@Valid @ModelAttribute("freelancer") Freelancer freelancer,
-                              BindingResult theBindingResult) {
-        if (theBindingResult.hasErrors()) {
-            System.out.println("error");
-            return "freelancer/edit-profile";
+        if (bindingResult.hasErrors()) {
+            return buildValidationErrorResponse(bindingResult);
         }
+
+        // εδώ υποθέτουμε ότι το id του freelancer έρχεται σωστό στο body
         freelancerService.updateFreelancer(freelancer);
-        return "freelancer/my-profile";
+        return ResponseEntity.ok(freelancer);
+    }
+
+    // ================== Helper για validation errors ==================
+
+    private ResponseEntity<?> buildValidationErrorResponse(BindingResult bindingResult) {
+        Map<String, String> errors = new HashMap<>();
+
+        for (FieldError fieldError : bindingResult.getFieldErrors()) {
+            errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+        }
+
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("message", "Validation failed");
+        responseBody.put("errors", errors);
+
+        return ResponseEntity.badRequest().body(responseBody);
     }
 }

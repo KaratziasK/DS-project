@@ -2,170 +2,181 @@ package gr.hua.dit.ds.dsproject.controllers;
 
 import gr.hua.dit.ds.dsproject.entities.Client;
 import gr.hua.dit.ds.dsproject.entities.Freelancer;
+import gr.hua.dit.ds.dsproject.entities.Project;
 import gr.hua.dit.ds.dsproject.services.ClientService;
 import gr.hua.dit.ds.dsproject.services.FreelancerService;
 import gr.hua.dit.ds.dsproject.services.ProjectService;
-import gr.hua.dit.ds.dsproject.entities.Project;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static gr.hua.dit.ds.dsproject.entities.Status.Accepted;
 import static gr.hua.dit.ds.dsproject.entities.Status.Rejected;
 
+@RestController
+@RequestMapping("/api/projects")
+public class ProjectController {
 
-@Controller
-@RequestMapping("/project")
-public class  ProjectController {
     private final ProjectService projectService;
     private final ClientService clientService;
     private final FreelancerService freelancerService;
 
-    public ProjectController(ProjectService projectService, ClientService clientService, FreelancerService freelancerService) {
+    public ProjectController(ProjectService projectService,
+                             ClientService clientService,
+                             FreelancerService freelancerService) {
         this.projectService = projectService;
         this.clientService = clientService;
         this.freelancerService = freelancerService;
     }
-    
-    @Secured("ROLE_CLIENT")
-    @GetMapping("/new")
-    public String addProject(Model model){
-        Project project = new Project();
-        model.addAttribute("project", project);
-        model.addAttribute("msg","");
-        return "project/project";
-    }
+
+    // ================== Δημιουργία Project (Client) ==================
 
     @Secured("ROLE_CLIENT")
-    @PostMapping("/new")
-    public String saveProject(@Valid @ModelAttribute("project") Project project, BindingResult theBindingResult, Model model ){
-        if (theBindingResult.hasErrors()) {
-            System.out.println("error");
-            return "project/project";
-        }else {
-            Client currentClient = clientService.getCurrentClient();
-            project.setClient(currentClient);
+    @PostMapping("")
+    public ResponseEntity<?> createProject(
+            @Valid @RequestBody Project project,
+            BindingResult bindingResult) {
 
-            System.out.printf(project.getProjectStatus().toString());
-            projectService.saveProject(project);
-            model.addAttribute("projects", projectService.getProjects());
-            return "redirect:/client/my-projects";
-            /*
-            Εδώ κάνουμε redirect έτσι ώστε σε περίπτωση που ο client
-            κάνει reload page, να μην ξανά στείλουμε post request και
-            να καταγράψουμε το ίδιο project πολλές φορές.
-            */
+        if (bindingResult.hasErrors()) {
+            return buildValidationErrorResponse(bindingResult);
         }
+
+        Client currentClient = clientService.getCurrentClient();
+        project.setClient(currentClient);
+
+        Project saved = projectService.saveProject(project);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    @PostMapping("/assignRequest/{projectId}")
-    public String assignRequestToProject(@PathVariable int projectId, Model model) {
+    // ================== Assign Request σε Project (Freelancer) ==================
+
+    @PostMapping("/{projectId}/assign-request")
+    public ResponseEntity<?> assignRequestToProject(@PathVariable int projectId) {
 
         Freelancer freelancer = freelancerService.getCurrentFreelancer();
         projectService.assignRequestToProject(projectId, freelancer);
 
-        model.addAttribute("freelancerRequests", freelancer.getRequests());
-        return "request/myrequests";
+        // Επιστρέφουμε τα requests του freelancer (όπως έκανε το view "request/myrequests")
+        return ResponseEntity.ok(freelancer.getRequests());
+    }
+
+    // ================== Admin: Pending projects ==================
+
+    @Secured("ROLE_ADMIN")
+    @GetMapping("/pending")
+    public ResponseEntity<List<Project>> getPendingProjects() {
+        return ResponseEntity.ok(projectService.getProjectsPending());
     }
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/projectsPending")
-    public String showPendingProjects(Model model) {
-        model.addAttribute("projects", projectService.getProjectsPending());
-        return "project/projectsPending";
-    }
-
-    @Secured("ROLE_ADMIN")
-    @PostMapping("accept-project/{projectId}")
-    public String acceptProject(@PathVariable int projectId,Model model) {
+    @PostMapping("/{projectId}/accept")
+    public ResponseEntity<Project> acceptProject(@PathVariable int projectId) {
         Project project = projectService.getProject(projectId);
         project.setProjectStatus(Accepted);
-        projectService.saveProject(project);
-        model.addAttribute("projects", projectService.getProjectsPending());
-        return "project/projectsPending";
+        Project saved = projectService.saveProject(project);
+        return ResponseEntity.ok(saved);
     }
 
     @Secured("ROLE_ADMIN")
-    @PostMapping("reject-project/{projectId}")
-    public String rejectProject(@PathVariable int projectId,Model model) {
+    @PostMapping("/{projectId}/reject")
+    public ResponseEntity<Project> rejectProject(@PathVariable int projectId) {
         Project project = projectService.getProject(projectId);
         project.setProjectStatus(Rejected);
-        projectService.saveProject(project);
-        model.addAttribute("projects", projectService.getProjectsPending());
-        return "project/projectsPending";
+        Project saved = projectService.saveProject(project);
+        return ResponseEntity.ok(saved);
+    }
+
+    // ================== Admin: Rejected projects ==================
+
+    @Secured("ROLE_ADMIN")
+    @GetMapping("/rejected")
+    public ResponseEntity<List<Project>> getRejectedProjects() {
+        return ResponseEntity.ok(projectService.getRejectedProjects());
     }
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/projectsRejected")
-    public String showRejectedProjects(Model model) {
-        model.addAttribute("projects", projectService.getRejectedProjects());
-        return "project/projectsRejected";
-    }
-
-    @Secured("ROLE_ADMIN")
-    @PostMapping("deleteProject/{projectId}")
-    public String deleteProjectRejected(@PathVariable int projectId, Model model) {
+    @DeleteMapping("/rejected/{projectId}")
+    public ResponseEntity<Void> deleteRejectedProject(@PathVariable int projectId) {
         projectService.deleteProject(projectId);
-        model.addAttribute("projects", projectService.getRejectedProjects());
-        return "project/projectsRejected";
+        return ResponseEntity.noContent().build();
     }
 
+    // ================== Admin: Outdated projects (όλα) ==================
+
     @Secured("ROLE_ADMIN")
-    @PostMapping("deleteProjectOutdated/{projectId}")
-    public String deleteProjectOutdated(@PathVariable int projectId, Model model) {
+    @GetMapping("/outdated")
+    public ResponseEntity<List<Project>> getAllOutdatedProjects() {
+        return ResponseEntity.ok(projectService.getAllOutdatedProjects());
+    }
+
+    // ================== Client: Unassigned, Assigned, Completed, Unassigned+Outdated ==================
+
+    @Secured("ROLE_CLIENT")
+    @GetMapping("/unassigned")
+    public ResponseEntity<List<Project>> getUnassignedProjectsForClient() {
+        Client currentClient = clientService.getCurrentClient();
+        return ResponseEntity.ok(projectService.getUnassignedProjects(currentClient));
+    }
+
+    @Secured("ROLE_CLIENT")
+    @GetMapping("/assigned")
+    public ResponseEntity<List<Project>> getAssignedProjectsForClient() {
+        Client currentClient = clientService.getCurrentClient();
+        return ResponseEntity.ok(projectService.getAssignedProjects(currentClient));
+    }
+
+    @Secured("ROLE_CLIENT")
+    @GetMapping("/unassigned-outdated")
+    public ResponseEntity<List<Project>> getUnassignedAndOutdatedProjectsForClient() {
+        Client currentClient = clientService.getCurrentClient();
+        return ResponseEntity.ok(projectService.getUnassignedAndOutdatedProjects(currentClient));
+    }
+
+    @Secured("ROLE_CLIENT")
+    @DeleteMapping("/unassigned-outdated/{projectId}")
+    public ResponseEntity<List<Project>> deleteUnassignedOutdatedProject(@PathVariable int projectId) {
         projectService.deleteProject(projectId);
         Client currentClient = clientService.getCurrentClient();
-        model.addAttribute("projectsUnassignedAndOutdated", projectService.getUnassignedAndOutdatedProjects(currentClient));
-        return "project/unassignedANDoutdated";
+        // όπως παλιά, επιστρέφουμε τη «φρέσκια» λίστα μετά τη διαγραφή
+        return ResponseEntity.ok(projectService.getUnassignedAndOutdatedProjects(currentClient));
     }
 
     @Secured("ROLE_CLIENT")
-    @GetMapping("/projectsUnassigned")
-    public String showUnassignedProjects(Model model) {
+    @GetMapping("/completed")
+    public ResponseEntity<List<Project>> getCompletedProjectsForClient() {
         Client currentClient = clientService.getCurrentClient();
-        model.addAttribute("projectsUnassigned", projectService.getUnassignedProjects(currentClient));
-        return "project/projectsUnassigned";
+        return ResponseEntity.ok(projectService.getCompletedProjects(currentClient));
     }
 
-    @Secured("ROLE_CLIENT")
-    @GetMapping("/projectsAssigned")
-    public String showAssignedProjects(Model model) {
-        Client currentClient = clientService.getCurrentClient();
-        model.addAttribute("assignedProjects", projectService.getAssignedProjects(currentClient));
-        return "project/projectsAssigned";
-    }
+    // ================== Admin: Accepted projects ==================
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("")
-    public String showAcceptedProjects(Model model) {
-        model.addAttribute("acceptedProjects", projectService.getAcceptedProjects());
-        return "project/projects";
+    @GetMapping("/accepted")
+    public ResponseEntity<List<Project>> getAcceptedProjects() {
+        return ResponseEntity.ok(projectService.getAcceptedProjects());
     }
 
-    @Secured("ROLE_CLIENT")
-    @GetMapping("/unassignedANDoutdated")
-    public String showUnassignedAndOutdatedProjects(Model model) {
-        Client currentClient = clientService.getCurrentClient();
-        model.addAttribute("projectsUnassignedAndOutdated", projectService.getUnassignedAndOutdatedProjects(currentClient));
-        return "project/unassignedANDoutdated";
-    }
+    // ================== Helper για validation errors ==================
 
-    @Secured("ROLE_ADMIN")
-    @GetMapping("/projectOutdated")
-    public String showProjectsOutdated(Model model) {
-        model.addAttribute("projects", projectService.getAllOutdatedProjects());
-        return "project/projectOutdated";
-    }
+    private ResponseEntity<?> buildValidationErrorResponse(BindingResult bindingResult) {
+        Map<String, String> errors = new HashMap<>();
 
-    @Secured("ROLE_CLIENT")
-    @GetMapping("/completedProjects")
-    public String showCompletedProjects(Model model) {
-        Client currentClient = clientService.getCurrentClient();
-        model.addAttribute("completedProjects", projectService.getCompletedProjects(currentClient));
-        return "project/completedProjects";
+        for (FieldError fieldError : bindingResult.getFieldErrors()) {
+            errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+        }
+
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("message", "Validation failed");
+        responseBody.put("errors", errors);
+
+        return ResponseEntity.badRequest().body(responseBody);
     }
 }
-

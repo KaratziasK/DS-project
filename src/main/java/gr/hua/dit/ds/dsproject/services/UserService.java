@@ -55,20 +55,21 @@ public class UserService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Optional<User> opt = userRepository.findByUsername(username);
 
-        if(opt.isEmpty())
-            throw new UsernameNotFoundException("User with email: " +username +" not found !");
-        else {
+        if (opt.isEmpty()) {
+            throw new UsernameNotFoundException("User with username: " + username + " not found!");
+        } else {
             User user = opt.get();
             return new org.springframework.security.core.userdetails.User(
-                    user.getEmail(),
+                    user.getUsername(),   // ✅ χρησιμοποιούμε το username
                     user.getPassword(),
                     user.getRoles()
                             .stream()
-                            .map(role-> new SimpleGrantedAuthority(role.toString()))
+                            .map(role -> new SimpleGrantedAuthority(role.getName())) // καλύτερα role.getName()
                             .collect(Collectors.toSet())
             );
         }
     }
+
 
     @Transactional
     public Optional<User> findByUsername(String username) {

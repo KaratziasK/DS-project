@@ -25,8 +25,8 @@ public class RequestService {
     public List<Request> getRequests(){return requestRepository.findAll();}
 
     @Transactional
-    public void saveRequest(Request request) {
-        requestRepository.save(request);
+    public Request saveRequest(Request request) {
+        return requestRepository.save(request);
     }
 
     @Transactional

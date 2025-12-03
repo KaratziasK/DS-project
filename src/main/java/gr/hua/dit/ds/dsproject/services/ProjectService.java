@@ -61,8 +61,8 @@ public class ProjectService {
     }
 
     @Transactional
-    public void saveProject(Project project) {
-        projectRepository.save(project);
+    public Project saveProject(Project project) {
+        return projectRepository.save(project);
     }
 
     @Transactional

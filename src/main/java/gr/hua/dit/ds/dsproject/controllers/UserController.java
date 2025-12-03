@@ -4,114 +4,210 @@ import gr.hua.dit.ds.dsproject.entities.Client;
 import gr.hua.dit.ds.dsproject.entities.Freelancer;
 import gr.hua.dit.ds.dsproject.entities.User;
 import gr.hua.dit.ds.dsproject.services.ClientService;
+import gr.hua.dit.ds.dsproject.services.EmailService;
 import gr.hua.dit.ds.dsproject.services.FreelancerService;
 import gr.hua.dit.ds.dsproject.services.UserService;
 import jakarta.validation.Valid;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
-import gr.hua.dit.ds.dsproject.services.EmailService;
 
-@Controller
-@RequestMapping("/auth")
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/auth")
 public class UserController {
 
     private final ClientService clientService;
     private final FreelancerService freelancerService;
-    private UserService userService;
+    private final UserService userService;
     private final EmailService emailService;
 
-    public UserController(UserService userService, ClientService clientService, FreelancerService freelancerService, EmailService emailService) {
+    public UserController(UserService userService,
+                          ClientService clientService,
+                          FreelancerService freelancerService,
+                          EmailService emailService) {
         this.userService = userService;
         this.clientService = clientService;
         this.freelancerService = freelancerService;
         this.emailService = emailService;
     }
 
-    @GetMapping("/registerClient")
-    public String registerClient(Model model) {
-        User user = new User();
-        Client client = new Client();
-        model.addAttribute("user", user);
-        model.addAttribute("client", client);
-        return "auth/register_client";
-    }
+    // ================== Client registration ==================
 
-    @PostMapping("/saveUserClient")
-    public String saveUserClient(@Valid @ModelAttribute("user") User user, BindingResult userBindingResult,
-                                 @Valid @ModelAttribute("client") Client client,
-                                 BindingResult clientBindingResult, Model model){
+    @PostMapping("/register/client")
+    public ResponseEntity<?> registerClient(
+            @Valid @RequestBody RegisterClientRequest request,
+            BindingResult bindingResult) {
 
-        if (userBindingResult.hasErrors() || clientBindingResult.hasErrors()) {
-            System.out.println("Error");
-            userBindingResult.getAllErrors().forEach(System.out::println);
-            clientBindingResult.getAllErrors().forEach(System.out::println);
-            return "auth/register_client";
+        // 1. Bean Validation errors (User/Client)
+        if (bindingResult.hasErrors()) {
+            return buildValidationErrorResponse(bindingResult);
         }
 
+        User user = request.getUser();
+        Client client = request.getClient();
+
+        // 2. Business validation – unique username/email
+        Map<String, String> errors = new HashMap<>();
+
         if (userService.findByUsername(user.getUsername()).isPresent()) {
-            String message = "Username is already in use. Please choose another one.";
-            model.addAttribute("msg", message);
-            return "auth/register_client";
+            errors.put("user.username", "Username is already in use. Please choose another one.");
         }
 
         if (userService.findByEmail(user.getEmail()).isPresent()) {
-            userBindingResult.rejectValue("email", "error.user", "Email is already in use. Please use another one.");
-            return "auth/register_client";
+            errors.put("user.email", "Email is already in use. Please use another one.");
         }
 
+        if (!errors.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("errors", errors));
+        }
+
+        // 3. Set relations
         user.setClient(client);
         client.setUser(user);
 
+        // 4. Persist
         Integer id = userService.saveUser(user, "ROLE_CLIENT");
         clientService.saveClient(client);
 
-        String fullName = user.getClient().getFirstName() + " " + user.getClient().getLastName();
+        // 5. Send email
+        String fullName = client.getFirstName() + " " + client.getLastName();
         emailService.sendSignupEmailToClient(user.getEmail(), fullName);
 
-        String message = "User '" + id + "' saved successfully!";
-        model.addAttribute("msg", message);
+        // 6. Response
+        Map<String, Object> body = new HashMap<>();
+        body.put("id", id);
+        body.put("message", "Client user created successfully");
+        body.put("username", user.getUsername());
+        body.put("email", user.getEmail());
 
-        return "index";
+        return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
 
-    @GetMapping("/registerFreelancer")
-    public String registerFreelancer(Model model) {
-        User user = new User();
-        Freelancer freelancer = new Freelancer();
-        model.addAttribute("user", user);
-        model.addAttribute("freelancer", freelancer);
-        return "auth/register_freelancer";
-    }
+    // ================== Freelancer registration ==================
 
-    @PostMapping("/saveUserFreelancer")
-    public String saveUserFreelancer(@Valid @ModelAttribute("user") User user, BindingResult userBindingResult,
-                                     @Valid @ModelAttribute("freelancer") Freelancer freelancer,
-                                     BindingResult freelancerBindingResult, Model model){
+    @PostMapping("/register/freelancer")
+    public ResponseEntity<?> registerFreelancer(
+            @Valid @RequestBody RegisterFreelancerRequest request,
+            BindingResult bindingResult) {
 
-        if (userBindingResult.hasErrors() || freelancerBindingResult.hasErrors()) {
-            System.out.println("Error");
-            return "auth/register_freelancer";
-        } if (userService.findByUsername(user.getUsername()).isPresent()) {
-            userBindingResult.rejectValue("username", "error.user", "Username is already in use. Please choose another one.");
-            return "auth/register_freelancer";
+        // 1. Bean Validation errors (User/Freelancer)
+        if (bindingResult.hasErrors()) {
+            return buildValidationErrorResponse(bindingResult);
         }
+
+        User user = request.getUser();
+        Freelancer freelancer = request.getFreelancer();
+
+        // 2. Business validation – unique username/email
+        Map<String, String> errors = new HashMap<>();
+
+        if (userService.findByUsername(user.getUsername()).isPresent()) {
+            errors.put("user.username", "Username is already in use. Please choose another one.");
+        }
+
         if (userService.findByEmail(user.getEmail()).isPresent()) {
-            userBindingResult.rejectValue("email", "error.user", "Email is already in use. Please use another one.");
-            return "auth/register_freelancer";
+            errors.put("user.email", "Email is already in use. Please use another one.");
         }
+
+        if (!errors.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("errors", errors));
+        }
+
+        // 3. Set relations
         user.setFreelancer(freelancer);
         freelancer.setUser(user);
 
+        // 4. Persist
         Integer id = userService.saveUser(user, "ROLE_FREELANCER");
         freelancerService.saveFreelancer(freelancer);
 
-        String fullName = user.getFreelancer().getFirstName() + " " + user.getFreelancer().getLastName();
+        // 5. Send email
+        String fullName = freelancer.getFirstName() + " " + freelancer.getLastName();
         emailService.sendSignupEmailToFreelancer(user.getEmail(), fullName);
 
-        String message = "User '" + id + "' saved successfully !";
-        model.addAttribute("msg", message);
-        return "index";
+        // 6. Response
+        Map<String, Object> body = new HashMap<>();
+        body.put("id", id);
+        body.put("message", "Freelancer user created successfully");
+        body.put("username", user.getUsername());
+        body.put("email", user.getEmail());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(body);
+    }
+
+    // ================== Helpers ==================
+
+    private ResponseEntity<?> buildValidationErrorResponse(BindingResult bindingResult) {
+        Map<String, String> errors = new HashMap<>();
+
+        for (FieldError fieldError : bindingResult.getFieldErrors()) {
+            errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+        }
+
+        return ResponseEntity.badRequest().body(Map.of("errors", errors));
+    }
+
+    // ================== DTOs ==================
+
+    public static class RegisterClientRequest {
+
+        @NotNull
+        @Valid
+        private User user;
+
+        @NotNull
+        @Valid
+        private Client client;
+
+        public User getUser() {
+            return user;
+        }
+
+        public void setUser(User user) {
+            this.user = user;
+        }
+
+        public Client getClient() {
+            return client;
+        }
+
+        public void setClient(Client client) {
+            this.client = client;
+        }
+    }
+
+    public static class RegisterFreelancerRequest {
+
+        @NotNull
+        @Valid
+        private User user;
+
+        @NotNull
+        @Valid
+        private Freelancer freelancer;
+
+        public User getUser() {
+            return user;
+        }
+
+        public void setUser(User user) {
+            this.user = user;
+        }
+
+        public Freelancer getFreelancer() {
+            return freelancer;
+        }
+
+        public void setFreelancer(Freelancer freelancer) {
+            this.freelancer = freelancer;
+        }
     }
 }
