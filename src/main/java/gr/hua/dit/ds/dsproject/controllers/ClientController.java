@@ -1,5 +1,6 @@
 package gr.hua.dit.ds.dsproject.controllers;
 
+import gr.hua.dit.ds.dsproject.dto.ClientDTO;
 import gr.hua.dit.ds.dsproject.entities.Client;
 import gr.hua.dit.ds.dsproject.entities.Project;
 import gr.hua.dit.ds.dsproject.entities.Request;
@@ -34,23 +35,17 @@ public class ClientController {
         this.requestService = requestService;
     }
 
-    // ================== Admin: λίστα clients ==================
-
     @Secured("ROLE_ADMIN")
-    @GetMapping("")
-    public ResponseEntity<List<Client>> getClients() {
-        return ResponseEntity.ok(clientService.getClients());
+    @GetMapping("/admin-use")
+    public ResponseEntity<List<ClientDTO>> getClients() {
+        return ResponseEntity.ok(clientService.getClientDTOs());
     }
-
-    // ================== Client: δικά του projects ==================
 
     @GetMapping("/my-projects")
     public ResponseEntity<List<Project>> getMyProjects() {
         Client client = clientService.getCurrentClient();
         return ResponseEntity.ok(client.getProjects());
     }
-
-    // ================== Admin: δημιουργία client (αντί για /new form) ==================
 
     @PostMapping("")
     public ResponseEntity<?> createClient(
@@ -65,8 +60,6 @@ public class ClientController {
         return ResponseEntity.status(HttpStatus.CREATED).body(client);
     }
 
-    // ================== Requests για συγκεκριμένο project ==================
-
     @PostMapping("/project-requests/{projectId}")
     public ResponseEntity<Map<String, Object>> getRequestsForProject(@PathVariable int projectId) {
         Project currentProject = projectService.getProject(projectId);
@@ -79,10 +72,9 @@ public class ClientController {
         return ResponseEntity.ok(body);
     }
 
-    // ================== Client: profile ==================
 
     @Secured("ROLE_CLIENT")
-    @GetMapping("/my-profile")
+    @GetMapping("/client-use/my-profile")
     public ResponseEntity<Client> getMyProfile() {
         Client client = clientService.getCurrentClient();
         return ResponseEntity.ok(client);
@@ -94,7 +86,8 @@ public class ClientController {
         return ResponseEntity.ok(client);
     }
 
-    @PostMapping("/edit-profile")
+    @Secured("ROLE_CLIENT")
+    @PostMapping("/client-use/edit-profile")
     public ResponseEntity<?> updateProfile(
             @Valid @RequestBody Client client,
             BindingResult bindingResult) {
@@ -106,8 +99,6 @@ public class ClientController {
         clientService.updateClient(client);
         return ResponseEntity.ok(client);
     }
-
-    // ================== Helper για validation errors ==================
 
     private ResponseEntity<?> buildValidationErrorResponse(BindingResult bindingResult) {
         Map<String, String> errors = new HashMap<>();

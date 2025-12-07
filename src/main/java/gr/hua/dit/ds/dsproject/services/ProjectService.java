@@ -3,6 +3,7 @@ package gr.hua.dit.ds.dsproject.services;
 
 import gr.hua.dit.ds.dsproject.entities.*;
 import gr.hua.dit.ds.dsproject.repositories.ProjectRepository;
+import gr.hua.dit.ds.dsproject.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +15,11 @@ import java.util.List;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
 
-    public ProjectService(ProjectRepository projectRepository) {
+    public ProjectService(ProjectRepository projectRepository,  UserRepository userRepository) {
         this.projectRepository = projectRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional

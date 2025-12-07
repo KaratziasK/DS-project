@@ -1,5 +1,7 @@
 package gr.hua.dit.ds.dsproject.controllers;
 
+import gr.hua.dit.ds.dsproject.dto.RegisterClientRequest;
+import gr.hua.dit.ds.dsproject.dto.RegisterFreelancerRequest;
 import gr.hua.dit.ds.dsproject.entities.Client;
 import gr.hua.dit.ds.dsproject.entities.Freelancer;
 import gr.hua.dit.ds.dsproject.entities.User;
@@ -37,30 +39,25 @@ public class UserController {
         this.emailService = emailService;
     }
 
-    // ================== Client registration ==================
-
-    @PostMapping("/register/client")
+    @PostMapping("/register/client/works")
     public ResponseEntity<?> registerClient(
             @Valid @RequestBody RegisterClientRequest request,
             BindingResult bindingResult) {
 
-        // 1. Bean Validation errors (User/Client)
         if (bindingResult.hasErrors()) {
             return buildValidationErrorResponse(bindingResult);
         }
 
-        User user = request.getUser();
-        Client client = request.getClient();
-
-        // 2. Business validation – unique username/email
+        // 1. Business validation (unique username/email)
         Map<String, String> errors = new HashMap<>();
 
-        if (userService.findByUsername(user.getUsername()).isPresent()) {
-            errors.put("user.username", "Username is already in use. Please choose another one.");
+
+        if (userService.findByUsername(request.getUsername()).isPresent()) {
+            errors.put("username", "Username is already in use. Please choose another one.");
         }
 
-        if (userService.findByEmail(user.getEmail()).isPresent()) {
-            errors.put("user.email", "Email is already in use. Please use another one.");
+        if (userService.findByEmail(request.getEmail()).isPresent()) {
+            errors.put("email", "Email is already in use. Please use another one.");
         }
 
         if (!errors.isEmpty()) {
@@ -68,19 +65,31 @@ public class UserController {
                     .body(Map.of("errors", errors));
         }
 
-        // 3. Set relations
+        // 2. Φτιάξε User entity
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(request.getPassword());
+
+        // 3. Φτιάξε Client entity
+        Client client = new Client();
+        client.setFirstName(request.getFirstName());
+        client.setLastName(request.getLastName());
+        client.setPhone(request.getPhone());
+
+        // 4. Set relations
         user.setClient(client);
         client.setUser(user);
 
-        // 4. Persist
+        // 5. Save
         Integer id = userService.saveUser(user, "ROLE_CLIENT");
         clientService.saveClient(client);
 
-        // 5. Send email
+        // 6. Email
         String fullName = client.getFirstName() + " " + client.getLastName();
         emailService.sendSignupEmailToClient(user.getEmail(), fullName);
 
-        // 6. Response
+        // 7. Response
         Map<String, Object> body = new HashMap<>();
         body.put("id", id);
         body.put("message", "Client user created successfully");
@@ -90,30 +99,23 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
 
-    // ================== Freelancer registration ==================
-
-    @PostMapping("/register/freelancer")
+    @PostMapping("/register/freelancer/works")
     public ResponseEntity<?> registerFreelancer(
             @Valid @RequestBody RegisterFreelancerRequest request,
             BindingResult bindingResult) {
 
-        // 1. Bean Validation errors (User/Freelancer)
         if (bindingResult.hasErrors()) {
             return buildValidationErrorResponse(bindingResult);
         }
 
-        User user = request.getUser();
-        Freelancer freelancer = request.getFreelancer();
-
-        // 2. Business validation – unique username/email
         Map<String, String> errors = new HashMap<>();
 
-        if (userService.findByUsername(user.getUsername()).isPresent()) {
-            errors.put("user.username", "Username is already in use. Please choose another one.");
+        if (userService.findByUsername(request.getUsername()).isPresent()) {
+            errors.put("username", "Username is already in use. Please choose another one.");
         }
 
-        if (userService.findByEmail(user.getEmail()).isPresent()) {
-            errors.put("user.email", "Email is already in use. Please use another one.");
+        if (userService.findByEmail(request.getEmail()).isPresent()) {
+            errors.put("email", "Email is already in use. Please use another one.");
         }
 
         if (!errors.isEmpty()) {
@@ -121,19 +123,29 @@ public class UserController {
                     .body(Map.of("errors", errors));
         }
 
-        // 3. Set relations
+        // User
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(request.getPassword());
+
+        // Freelancer
+        Freelancer freelancer = new Freelancer();
+        freelancer.setFirstName(request.getFirstName());
+        freelancer.setLastName(request.getLastName());
+        freelancer.setPhone(request.getPhone());
+        freelancer.setSkills(request.getSkills());
+        // verified default = false από το entity :contentReference[oaicite:0]{index=0}
+
         user.setFreelancer(freelancer);
         freelancer.setUser(user);
 
-        // 4. Persist
         Integer id = userService.saveUser(user, "ROLE_FREELANCER");
         freelancerService.saveFreelancer(freelancer);
 
-        // 5. Send email
         String fullName = freelancer.getFirstName() + " " + freelancer.getLastName();
         emailService.sendSignupEmailToFreelancer(user.getEmail(), fullName);
 
-        // 6. Response
         Map<String, Object> body = new HashMap<>();
         body.put("id", id);
         body.put("message", "Freelancer user created successfully");
@@ -142,6 +154,7 @@ public class UserController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
+
 
     // ================== Helpers ==================
 
@@ -155,59 +168,4 @@ public class UserController {
         return ResponseEntity.badRequest().body(Map.of("errors", errors));
     }
 
-    // ================== DTOs ==================
-
-    public static class RegisterClientRequest {
-
-        @NotNull
-        @Valid
-        private User user;
-
-        @NotNull
-        @Valid
-        private Client client;
-
-        public User getUser() {
-            return user;
-        }
-
-        public void setUser(User user) {
-            this.user = user;
-        }
-
-        public Client getClient() {
-            return client;
-        }
-
-        public void setClient(Client client) {
-            this.client = client;
-        }
-    }
-
-    public static class RegisterFreelancerRequest {
-
-        @NotNull
-        @Valid
-        private User user;
-
-        @NotNull
-        @Valid
-        private Freelancer freelancer;
-
-        public User getUser() {
-            return user;
-        }
-
-        public void setUser(User user) {
-            this.user = user;
-        }
-
-        public Freelancer getFreelancer() {
-            return freelancer;
-        }
-
-        public void setFreelancer(Freelancer freelancer) {
-            this.freelancer = freelancer;
-        }
-    }
 }

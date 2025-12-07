@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/auth/works")
 public class AuthController {
 
     private final RoleRepository roleRepository;

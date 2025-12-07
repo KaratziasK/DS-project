@@ -39,7 +39,7 @@ public class AssignmentController {
     // ================== Admin: λίστα αναθέσεων ==================
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("")
+    @GetMapping("/admin-use")
     public ResponseEntity<List<Assignment>> getAssignments() {
         return ResponseEntity.ok(assignmentService.getAssignments());
     }
@@ -47,7 +47,7 @@ public class AssignmentController {
     // ================== Admin: ανάθεση freelancer σε project ==================
 
     @Secured("ROLE_ADMIN")
-    @PostMapping("/assign-freelancer/{requestId}")
+    @PostMapping("/admin-use/assign-freelancer/{requestId}")
     public ResponseEntity<Project> assignFreelancerToProject(@PathVariable int requestId) {
 
         Request request = requestService.getRequest(requestId);
