@@ -1,5 +1,6 @@
 package gr.hua.dit.ds.dsproject.controllers;
 
+import gr.hua.dit.ds.dsproject.dto.FreelancerProfileUpdateDTO;
 import gr.hua.dit.ds.dsproject.entities.Freelancer;
 import gr.hua.dit.ds.dsproject.entities.Project;
 import gr.hua.dit.ds.dsproject.entities.Request;
@@ -129,17 +130,26 @@ public class FreelancerController {
     @Secured("ROLE_FREELANCER")
     @PutMapping("/my-profile")
     public ResponseEntity<?> updateMyProfile(
-            @Valid @RequestBody Freelancer freelancer,
+            @Valid @RequestBody FreelancerProfileUpdateDTO dto,
             BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) {
             return buildValidationErrorResponse(bindingResult);
         }
 
-        // εδώ υποθέτουμε ότι το id του freelancer έρχεται σωστό στο body
-        freelancerService.updateFreelancer(freelancer);
+        // Πάντα από το token, όχι από το body
+        Freelancer freelancer = freelancerService.getCurrentFreelancer();
+
+        freelancer.setFirstName(dto.getFirstName());
+        freelancer.setLastName(dto.getLastName());
+        freelancer.setPhone(dto.getPhone());
+        freelancer.setSkills(dto.getSkills());
+
+        freelancerService.saveFreelancer(freelancer);
+
         return ResponseEntity.ok(freelancer);
     }
+
 
     // ================== Helper για validation errors ==================
 
