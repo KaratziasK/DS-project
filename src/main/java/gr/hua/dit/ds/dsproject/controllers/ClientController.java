@@ -1,6 +1,8 @@
 package gr.hua.dit.ds.dsproject.controllers;
 
 import gr.hua.dit.ds.dsproject.dto.ClientDTO;
+import gr.hua.dit.ds.dsproject.dto.ClientProfileDTO;
+import gr.hua.dit.ds.dsproject.dto.ClientProfileUpdateDTO;
 import gr.hua.dit.ds.dsproject.entities.Client;
 import gr.hua.dit.ds.dsproject.entities.Project;
 import gr.hua.dit.ds.dsproject.entities.Request;
@@ -60,45 +62,53 @@ public class ClientController {
         return ResponseEntity.status(HttpStatus.CREATED).body(client);
     }
 
-    @PostMapping("/project-requests/{projectId}")
-    public ResponseEntity<Map<String, Object>> getRequestsForProject(@PathVariable int projectId) {
-        Project currentProject = projectService.getProject(projectId);
-        List<Request> requestsForProject = requestService.getRequestsByProjectID(projectId);
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("currentProject", currentProject);
-        body.put("requestsForProject", requestsForProject);
-
-        return ResponseEntity.ok(body);
-    }
-
 
     @Secured("ROLE_CLIENT")
     @GetMapping("/client-use/my-profile")
-    public ResponseEntity<Client> getMyProfile() {
+    public ResponseEntity<ClientProfileDTO> getMyProfile() {
         Client client = clientService.getCurrentClient();
-        return ResponseEntity.ok(client);
+        ClientProfileDTO dto = toClientProfileDTO(client);
+        return ResponseEntity.ok(dto);
     }
 
-    @GetMapping("/edit-profile")
-    public ResponseEntity<Client> getEditProfileData() {
-        Client client = clientService.getCurrentClient();
-        return ResponseEntity.ok(client);
+    private ClientProfileDTO toClientProfileDTO(Client client) {
+        ClientProfileDTO dto = new ClientProfileDTO();
+
+        dto.setClientId(client.getId());
+        dto.setFirstName(client.getFirstName());
+        dto.setLastName(client.getLastName());
+        dto.setPhone(client.getPhone());
+
+        if (client.getUser() != null) {
+            dto.setUserId(client.getUser().getId());
+            dto.setEmail(client.getUser().getEmail());
+            dto.setUsername(client.getUser().getUsername());
+        }
+
+        return dto;
     }
 
     @Secured("ROLE_CLIENT")
     @PostMapping("/client-use/edit-profile")
     public ResponseEntity<?> updateProfile(
-            @Valid @RequestBody Client client,
+            @Valid @RequestBody ClientProfileUpdateDTO dto,
             BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) {
             return buildValidationErrorResponse(bindingResult);
         }
 
+        Client client = clientService.getCurrentClient();
+
+        client.setFirstName(dto.getFirstName());
+        client.setLastName(dto.getLastName());
+        client.setPhone(dto.getPhone());
+
         clientService.updateClient(client);
-        return ResponseEntity.ok(client);
+
+        return ResponseEntity.ok("Profile updated successfully");
     }
+
 
     private ResponseEntity<?> buildValidationErrorResponse(BindingResult bindingResult) {
         Map<String, String> errors = new HashMap<>();

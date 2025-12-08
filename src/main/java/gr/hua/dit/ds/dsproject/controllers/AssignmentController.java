@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import gr.hua.dit.ds.dsproject.dto.AssignmentSummaryDTO;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/assignments")
@@ -40,14 +42,53 @@ public class AssignmentController {
 
     @Secured("ROLE_ADMIN")
     @GetMapping("/admin-use")
-    public ResponseEntity<List<Assignment>> getAssignments() {
-        return ResponseEntity.ok(assignmentService.getAssignments());
+    public ResponseEntity<List<AssignmentSummaryDTO>> getAssignments() {
+        List<Assignment> assignments = assignmentService.getAssignments();
+
+        List<AssignmentSummaryDTO> dtoList = assignments.stream()
+                .map(this::toAssignmentSummaryDTO)
+                .toList();  // ή .collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtoList);
     }
 
-    // ================== Admin: ανάθεση freelancer σε project ==================
+    private AssignmentSummaryDTO toAssignmentSummaryDTO(Assignment assignment) {
+        AssignmentSummaryDTO dto = new AssignmentSummaryDTO();
 
-    @Secured("ROLE_ADMIN")
-    @PostMapping("/admin-use/assign-freelancer/{requestId}")
+        dto.setId(assignment.getId());
+        dto.setDateSubmitted(assignment.getDateSubmitted());
+        dto.setStatus(assignment.getStatus()); // "Under Construction" / "Completed"
+
+        // Deadline από το project
+        if (assignment.getProject() != null) {
+            dto.setDeadline(assignment.getProject().getDeadline());
+        }
+
+        // Freelancer username
+        if (assignment.getFreelancer() != null &&
+                assignment.getFreelancer().getUser() != null) {
+            dto.setFreelancerUsername(
+                    assignment.getFreelancer().getUser().getUsername()
+            );
+        }
+
+        // Client username (μέσα από το project → client → user)
+        if (assignment.getProject() != null &&
+                assignment.getProject().getClient() != null &&
+                assignment.getProject().getClient().getUser() != null) {
+            dto.setClientUsername(
+                    assignment.getProject().getClient().getUser().getUsername()
+            );
+        }
+
+        return dto;
+    }
+
+
+
+    // ================== Admin: ανάθεση freelancer σε project ==================
+    @Secured("ROLE_CLIENT")
+    @PostMapping("/client-use/assign-freelancer/{requestId}")
     public ResponseEntity<Project> assignFreelancerToProject(@PathVariable int requestId) {
 
         Request request = requestService.getRequest(requestId);

@@ -66,16 +66,17 @@ public class FreelancerService {
 
     @Transactional
     public Freelancer getCurrentFreelancer() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        User user = userRepository.findByEmail(email)
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        System.out.println(email);
 
         Freelancer freelancer = user.getFreelancer();
         if (freelancer == null) {
-            throw new RuntimeException("Freelancer not found for email: " + email);
+            throw new RuntimeException("Freelancer not found for username: " + username);
         }
+
         return freelancer;
     }
 

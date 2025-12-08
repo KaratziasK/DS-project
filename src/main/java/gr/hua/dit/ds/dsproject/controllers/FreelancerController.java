@@ -1,10 +1,7 @@
 package gr.hua.dit.ds.dsproject.controllers;
 
-import gr.hua.dit.ds.dsproject.dto.FreelancerProfileUpdateDTO;
-import gr.hua.dit.ds.dsproject.entities.Freelancer;
-import gr.hua.dit.ds.dsproject.entities.Project;
-import gr.hua.dit.ds.dsproject.entities.Request;
-import gr.hua.dit.ds.dsproject.entities.Assignment;
+import gr.hua.dit.ds.dsproject.dto.*;
+import gr.hua.dit.ds.dsproject.entities.*;
 import gr.hua.dit.ds.dsproject.services.FreelancerService;
 import gr.hua.dit.ds.dsproject.services.ProjectService;
 import jakarta.validation.Valid;
@@ -18,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import gr.hua.dit.ds.dsproject.dto.FreelancerSummaryDTO;
 
 @RestController
 @RequestMapping("/api/freelancers")
@@ -81,26 +77,10 @@ public class FreelancerController {
         return ResponseEntity.noContent().build();
     }
 
-    // ================== Admin: δημιουργία freelancer (αντί για /new form) ==================
-
-    @Secured("ROLE_ADMIN")
-    @PostMapping("/admin-use")
-    public ResponseEntity<?> createFreelancer(
-            @Valid @RequestBody Freelancer freelancer,
-            BindingResult bindingResult) {
-
-        if (bindingResult.hasErrors()) {
-            return buildValidationErrorResponse(bindingResult);
-        }
-
-        freelancerService.saveFreelancer(freelancer);
-        return ResponseEntity.status(HttpStatus.CREATED).body(freelancer);
-    }
-
     // ================== Freelancer: διαθέσιμα projects ==================
 
     @Secured("ROLE_FREELANCER")
-    @GetMapping("/freelancer-use/projects")
+    @GetMapping("/freelancer-use/projects-available-to-request")
     public ResponseEntity<Map<String, Object>> getProjectsForFreelancer() {
         Freelancer freelancer = freelancerService.getCurrentFreelancer();
         List<Project> acceptedProjects = projectService.getAcceptedProjects();
@@ -111,40 +91,150 @@ public class FreelancerController {
         List<Project> notOutdated =
                 projectService.getProjectNotOutDated(notRequestedNotAssignedProjects);
 
+        // DTOs για τα διαθέσιμα projects
+        List<ProjectSummaryDTO> availableProjectDTOs = notOutdated.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+
         Map<String, Object> body = new HashMap<>();
-        body.put("notRequestedProjects", notOutdated);
+        body.put("notRequestedProjects", availableProjectDTOs);
         body.put("freelancerVerified", freelancer.getVerified());
 
         return ResponseEntity.ok(body);
     }
 
+    private ProjectSummaryDTO toProjectSummaryDTO(Project project) {
+        ProjectSummaryDTO dto = new ProjectSummaryDTO();
+
+        dto.setId(project.getId());
+        dto.setTitle(project.getTitle());
+        dto.setDescription(project.getDescription());
+        dto.setPaymentAmount(project.getPaymentAmount());
+        dto.setProjectStatus(
+                project.getProjectStatus() != null ? project.getProjectStatus().name() : null
+        );
+        dto.setDeadline(project.getDeadline());
+
+        return dto;
+    }
+
     // ================== Freelancer: τα δικά του requests ==================
 
     @Secured("ROLE_FREELANCER")
-    @GetMapping("/freelancer-use/requests")
-    public ResponseEntity<List<Request>> getMyRequests() {
+    @GetMapping("/freelancer-use/my-requests")
+    public ResponseEntity<List<RequestSummaryDTO>> getMyRequests() {
         Freelancer freelancer = freelancerService.getCurrentFreelancer();
-        return ResponseEntity.ok(freelancer.getRequests());
+
+        List<Request> requests = freelancer.getRequests();
+
+        List<RequestSummaryDTO> dtoList = requests.stream()
+                .map(this::toRequestSummaryDTO)
+                .toList();
+
+        return ResponseEntity.ok(dtoList);
     }
+
+
+    private RequestSummaryDTO toRequestSummaryDTO(Request request) {
+        RequestSummaryDTO dto = new RequestSummaryDTO();
+
+        dto.setId(request.getId());
+
+        dto.setRequestStatus(
+                request.getRequestStatus() != null
+                        ? request.getRequestStatus().name()
+                        : null
+        );
+
+        if (request.getProject() != null) {
+            dto.setProjectTitle(request.getProject().getTitle());
+            dto.setProjectDescription(request.getProject().getDescription());
+        }
+
+        dto.setDateSubmitted(request.getDateSubmitted());
+
+        if (request.getFreelancer() != null &&
+                request.getFreelancer().getUser() != null) {
+            dto.setFreelancerUsername(
+                    request.getFreelancer().getUser().getUsername()
+            );
+        }
+
+        return dto;
+    }
+
 
     // ================== Freelancer: assignments ==================
 
     @Secured("ROLE_FREELANCER")
     @GetMapping("/freelancer-use/my-assignments")
-    public ResponseEntity<List<Assignment>> getMyAssignments() {
+    public ResponseEntity<List<FreelancerAssignmentSummaryDTO>> getMyAssignments() {
         Freelancer freelancer = freelancerService.getCurrentFreelancer();
-        return ResponseEntity.ok(freelancer.getAssignments());
+
+        List<FreelancerAssignmentSummaryDTO> dtoList = freelancer.getAssignments()
+                .stream()
+                .map(this::toFreelancerAssignmentSummaryDTO)
+                .toList();
+
+        return ResponseEntity.ok(dtoList);
+    }
+
+
+    private FreelancerAssignmentSummaryDTO toFreelancerAssignmentSummaryDTO(Assignment assignment) {
+        FreelancerAssignmentSummaryDTO dto = new FreelancerAssignmentSummaryDTO();
+
+        dto.setAssignmentId(assignment.getId());
+        dto.setDateSubmitted(assignment.getDateSubmitted());
+        dto.setStatus(assignment.getStatus());
+
+        Project p = assignment.getProject();
+        dto.setProjectId(p.getId());
+        dto.setProjectTitle(p.getTitle());
+        dto.setProjectDescription(p.getDescription());
+        dto.setPaymentAmount(p.getPaymentAmount());
+        dto.setProjectStatus(p.getProjectStatus().name());
+        dto.setDeadline(p.getDeadline());
+
+        Client c = p.getClient();
+        dto.setClientFullName(c.getFirstName() + " " + c.getLastName());
+        dto.setClientPhone(c.getPhone());
+        if (c.getUser() != null) {
+            dto.setClientEmail(c.getUser().getEmail());
+        }
+
+        return dto;
     }
 
     // ================== Freelancer: profile ==================
 
     @Secured("ROLE_FREELANCER")
     @GetMapping("/freelancer-use/my-profile")
-    public ResponseEntity<Freelancer> getMyProfile() {
-        Freelancer freelancer =
-                freelancerService.getFreelancer(freelancerService.getCurrentFreelancer().getId());
-        return ResponseEntity.ok(freelancer);
+    public ResponseEntity<FreelancerProfileDTO> getMyProfile() {
+        Freelancer freelancer = freelancerService.getCurrentFreelancer();
+        FreelancerProfileDTO dto = toFreelancerProfileDTO(freelancer);
+        return ResponseEntity.ok(dto);
     }
+
+
+    private FreelancerProfileDTO toFreelancerProfileDTO(Freelancer freelancer) {
+        FreelancerProfileDTO dto = new FreelancerProfileDTO();
+
+        dto.setFreelancerId(freelancer.getId());
+        dto.setFirstName(freelancer.getFirstName());
+        dto.setLastName(freelancer.getLastName());
+        dto.setPhone(freelancer.getPhone());
+        dto.setSkills(freelancer.getSkills());
+        dto.setVerified(freelancer.getVerified());
+
+        if (freelancer.getUser() != null) {
+            dto.setUserId(freelancer.getUser().getId());
+            dto.setUsername(freelancer.getUser().getUsername());
+            dto.setEmail(freelancer.getUser().getEmail());
+        }
+
+        return dto;
+    }
+
 
     @Secured("ROLE_FREELANCER")
     @PutMapping("/freelancer-use/my-profile")
@@ -166,7 +256,9 @@ public class FreelancerController {
 
         freelancerService.saveFreelancer(freelancer);
 
-        return ResponseEntity.ok(freelancer);
+        FreelancerProfileDTO responseDto = toFreelancerProfileDTO(freelancer);
+        return ResponseEntity.ok(responseDto);
+
     }
 
 

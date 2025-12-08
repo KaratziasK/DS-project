@@ -19,4 +19,9 @@ public class AssignmentService {
     public List<Assignment> getAssignments(){
         return assignmentRepository.findAll();
     }
+
+    @Transactional
+    public Assignment saveAssignment(Assignment assignment) {
+        return assignmentRepository.save(assignment);
+    }
 }

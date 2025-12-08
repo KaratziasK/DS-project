@@ -126,20 +126,31 @@ public class ProjectService {
     }
 
     @Transactional
-    public void assignRequestToProject(Integer projectId, Freelancer freelancer) {
+    public Request assignRequestToProject(Integer projectId, Freelancer freelancer) {
+
+        // (προαιρετικό) Έλεγχος αν έχει ήδη στείλει request στο ίδιο project
+        Project project = projectRepository.findById(projectId).orElseThrow();
+        for (Request r : project.getRequests()) {
+            if (r.getFreelancer() != null &&
+                    r.getFreelancer().getId().equals(freelancer.getId())) {
+                throw new RuntimeException("You have already requested this project");
+            }
+        }
+
         Request request = new Request();
 
-        List<Request> freelancer_requests = freelancer.getRequests();
-        freelancer_requests.add(request);
-        freelancer.setRequests(freelancer_requests);
+        // freelancer side
+        freelancer.getRequests().add(request);
         request.setFreelancer(freelancer);
 
-        Project project = projectRepository.findById(projectId).get();
-        List<Request> project_requests = project.getRequests();
-        project_requests.add(request);
-        project.setRequests(project_requests);
-
+        // project side
+        project.getRequests().add(request);
         request.setProject(project);
+
+        // Αν έχεις RequestRepository, εδώ κανονικά:
+        // return requestRepository.save(request);
+        // αλλιώς, αν έχεις cascade από Project/Freelancer, μπορεί να σωθεί έμμεσα.
+        return request;
     }
 
     @Transactional
@@ -205,4 +216,19 @@ public class ProjectService {
         }
         return completedProjects;
     }
+
+    @Transactional
+    public List<Project> getAllProjectForThisClient(Client currentClient) {
+        List<Project> projects = projectRepository.findAll();
+        List<Project> clientProjects = new ArrayList<>();
+
+        for (Project p : projects) {
+            if (p.getClient() != null && p.getClient().equals(currentClient)) {
+                clientProjects.add(p);
+            }
+        }
+
+        return clientProjects;
+    }
+
 }

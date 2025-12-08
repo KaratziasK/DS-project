@@ -1,11 +1,13 @@
 package gr.hua.dit.ds.dsproject.controllers;
 
+import gr.hua.dit.ds.dsproject.dto.AssignedProjectDTO;
 import gr.hua.dit.ds.dsproject.dto.ProjectCreateDTO;
 import gr.hua.dit.ds.dsproject.dto.ProjectSummaryDTO;
+import gr.hua.dit.ds.dsproject.dto.RequestSummaryDTO;
 import gr.hua.dit.ds.dsproject.entities.Client;
 import gr.hua.dit.ds.dsproject.entities.Freelancer;
 import gr.hua.dit.ds.dsproject.entities.Project;
-import gr.hua.dit.ds.dsproject.entities.User;
+import gr.hua.dit.ds.dsproject.entities.Request;
 import gr.hua.dit.ds.dsproject.services.ClientService;
 import gr.hua.dit.ds.dsproject.services.FreelancerService;
 import gr.hua.dit.ds.dsproject.services.ProjectService;
@@ -14,7 +16,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
@@ -94,15 +95,47 @@ public class ProjectController {
 
     // ================== Assign Request σε Project (Freelancer) ==================
 
-    @PostMapping("/{projectId}/assign-request")
-    public ResponseEntity<?> assignRequestToProject(@PathVariable int projectId) {
+    @Secured("ROLE_FREELANCER")
+    @PostMapping("/{projectId}/make-request")
+    public ResponseEntity<RequestSummaryDTO> assignRequestToProject(@PathVariable int projectId) {
 
         Freelancer freelancer = freelancerService.getCurrentFreelancer();
-        projectService.assignRequestToProject(projectId, freelancer);
 
-        // Επιστρέφουμε τα requests του freelancer (όπως έκανε το view "request/myrequests")
-        return ResponseEntity.ok(freelancer.getRequests());
+        Request newRequest = projectService.assignRequestToProject(projectId, freelancer);
+
+        RequestSummaryDTO dto = toRequestSummaryDTO(newRequest);
+
+        return ResponseEntity.ok(dto);
     }
+
+    private RequestSummaryDTO toRequestSummaryDTO(Request request) {
+        RequestSummaryDTO dto = new RequestSummaryDTO();
+
+        dto.setId(request.getId());
+
+        dto.setRequestStatus(
+                request.getRequestStatus() != null
+                        ? request.getRequestStatus().name()
+                        : null
+        );
+
+        if (request.getProject() != null) {
+            dto.setProjectTitle(request.getProject().getTitle());
+            dto.setProjectDescription(request.getProject().getDescription());
+        }
+
+        dto.setDateSubmitted(request.getDateSubmitted());
+
+        if (request.getFreelancer() != null &&
+                request.getFreelancer().getUser() != null) {
+            dto.setFreelancerUsername(
+                    request.getFreelancer().getUser().getUsername()
+            );
+        }
+
+        return dto;
+    }
+
 
     // ================== Admin: Pending projects ==================
 
@@ -183,25 +216,82 @@ public class ProjectController {
     // ================== Client: Unassigned, Assigned, Completed, Unassigned+Outdated ==================
 
     @Secured("ROLE_CLIENT")
-    @GetMapping("/client-use/unassigned")
-    public ResponseEntity<List<Project>> getUnassignedProjectsForClient() {
+    @GetMapping("/client-use/all-projects")
+    public ResponseEntity<List<ProjectSummaryDTO>> getAllProjectForThisClient() {
         Client currentClient = clientService.getCurrentClient();
-        return ResponseEntity.ok(projectService.getUnassignedProjects(currentClient));
+
+        List<Project> projects = projectService.getAllProjectForThisClient(currentClient);
+
+        List<ProjectSummaryDTO> dtoList = projects.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+
+        return ResponseEntity.ok(dtoList);
     }
+
+
+    @Secured("ROLE_CLIENT")
+    @GetMapping("/client-use/unassigned")
+    public ResponseEntity<List<ProjectSummaryDTO>> getUnassignedProjectsForClient() {
+        Client currentClient = clientService.getCurrentClient();
+        List<Project> unassigned = projectService.getUnassignedProjects(currentClient);
+
+        List<ProjectSummaryDTO> dtoList = unassigned.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+
+        return ResponseEntity.ok(dtoList);
+    }
+
 
     @Secured("ROLE_CLIENT")
     @GetMapping("/client-use/assigned")
-    public ResponseEntity<List<Project>> getAssignedProjectsForClient() {
+    public ResponseEntity<List<AssignedProjectDTO>> getAssignedProjectsForClient() {
         Client currentClient = clientService.getCurrentClient();
-        return ResponseEntity.ok(projectService.getAssignedProjects(currentClient));
+        List<Project> assignedProjects = projectService.getAssignedProjects(currentClient);
+
+        List<AssignedProjectDTO> dtoList = assignedProjects.stream()
+                .map(this::toAssignedProjectDTO)
+                .toList();
+
+        return ResponseEntity.ok(dtoList);
     }
+
+
+
+    private AssignedProjectDTO toAssignedProjectDTO(Project project) {
+        AssignedProjectDTO dto = new AssignedProjectDTO();
+
+        dto.setProjectId(project.getId());
+        dto.setTitle(project.getTitle());
+        dto.setPaymentAmount(project.getPaymentAmount());
+        dto.setDeadline(project.getDeadline());
+
+        if (project.getAssignment() != null &&
+                project.getAssignment().getFreelancer() != null &&
+                project.getAssignment().getFreelancer().getUser() != null) {
+            dto.setFreelancerUsername(
+                    project.getAssignment().getFreelancer().getUser().getUsername()
+            );
+        }
+
+        return dto;
+    }
+
 
     @Secured("ROLE_CLIENT")
     @GetMapping("/client-use/unassigned-outdated")
-    public ResponseEntity<List<Project>> getUnassignedAndOutdatedProjectsForClient() {
+    public ResponseEntity<List<ProjectSummaryDTO>> getUnassignedAndOutdatedProjectsForClient() {
         Client currentClient = clientService.getCurrentClient();
-        return ResponseEntity.ok(projectService.getUnassignedAndOutdatedProjects(currentClient));
+        List<Project> unassignedOutdated = projectService.getUnassignedAndOutdatedProjects(currentClient);
+
+        List<ProjectSummaryDTO> dtoList = unassignedOutdated.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+
+        return ResponseEntity.ok(dtoList);
     }
+
 
     @Secured("ROLE_CLIENT")
     @DeleteMapping("/client-use/unassigned-outdated/{projectId}")
@@ -214,18 +304,45 @@ public class ProjectController {
 
     @Secured("ROLE_CLIENT")
     @GetMapping("/client-use/completed")
-    public ResponseEntity<List<Project>> getCompletedProjectsForClient() {
+    public ResponseEntity<List<AssignedProjectDTO>> getCompletedProjectsForClient() {
         Client currentClient = clientService.getCurrentClient();
-        return ResponseEntity.ok(projectService.getCompletedProjects(currentClient));
+        List<Project> completedProjects = projectService.getCompletedProjects(currentClient);
+
+        List<AssignedProjectDTO> dtoList = completedProjects.stream()
+                .map(this::toAssignedProjectDTO)
+                .toList();
+
+        return ResponseEntity.ok(dtoList);
     }
+
 
     // ================== Admin: Accepted projects ==================
 
     @Secured("ROLE_ADMIN")
     @GetMapping("/admin-use/accepted")
-    public ResponseEntity<List<Project>> getAcceptedProjects() {
-        return ResponseEntity.ok(projectService.getAcceptedProjects());
+    public ResponseEntity<List<ProjectSummaryDTO>> getAcceptedProjects() {
+        List<Project> accepted = projectService.getAcceptedProjects();
+
+        List<ProjectSummaryDTO> dtoList = accepted.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+
+        return ResponseEntity.ok(dtoList);
     }
+
+    @Secured("ROLE_ADMIN")
+    @GetMapping("/admin-use/all")
+    public ResponseEntity<List<ProjectSummaryDTO>> getAllProjects() {
+        List<Project> projects = projectService.getProjects();
+
+        List<ProjectSummaryDTO> dtoList = projects.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+
+        return ResponseEntity.ok(dtoList);
+    }
+
+
 
     // ================== Helper για validation errors ==================
 
