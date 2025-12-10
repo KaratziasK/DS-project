@@ -41,7 +41,7 @@ public class AssignmentController {
     // ================== Admin: λίστα αναθέσεων ==================
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use")
+    @GetMapping("/admin-use/ok-need")
     public ResponseEntity<List<AssignmentSummaryDTO>> getAssignments() {
         List<Assignment> assignments = assignmentService.getAssignments();
 

@@ -39,7 +39,7 @@ public class UserController {
         this.emailService = emailService;
     }
 
-    @PostMapping("/register/client/works")
+    @PostMapping("/register/client/ok-need")
     public ResponseEntity<?> registerClient(
             @Valid @RequestBody RegisterClientRequest request,
             BindingResult bindingResult) {
@@ -99,7 +99,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
 
-    @PostMapping("/register/freelancer/works")
+    @PostMapping("/register/freelancer/ok-need")
     public ResponseEntity<?> registerFreelancer(
             @Valid @RequestBody RegisterFreelancerRequest request,
             BindingResult bindingResult) {

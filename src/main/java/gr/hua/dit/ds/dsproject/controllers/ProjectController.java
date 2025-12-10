@@ -140,7 +140,7 @@ public class ProjectController {
     // ================== Admin: Pending projects ==================
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use/pending")
+    @GetMapping("/admin-use/pending/ok-need")
     public ResponseEntity<List<ProjectSummaryDTO>> getPendingProjects() {
         List<Project> pendingProjects = projectService.getProjectsPending();
 
@@ -153,7 +153,7 @@ public class ProjectController {
 
 
     @Secured("ROLE_ADMIN")
-    @PostMapping("/admin-use/{projectId}/accept")
+    @PostMapping("/admin-use/{projectId}/accept/ok-need")
     public ResponseEntity<ProjectSummaryDTO> acceptProject(@PathVariable int projectId) {
         Project project = projectService.getProject(projectId);
         project.setProjectStatus(Accepted);
@@ -165,7 +165,7 @@ public class ProjectController {
 
 
     @Secured("ROLE_ADMIN")
-    @PostMapping("/admin-use/{projectId}/reject")
+    @PostMapping("/admin-use/{projectId}/reject/ok-need")
     public ResponseEntity<ProjectSummaryDTO> rejectProject(@PathVariable int projectId) {
         Project project = projectService.getProject(projectId);
         project.setProjectStatus(Rejected);
@@ -179,7 +179,7 @@ public class ProjectController {
     // ================== Admin: Rejected projects ==================
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use/rejected")
+    @GetMapping("/admin-use/rejected/ok-need")
     public ResponseEntity<List<ProjectSummaryDTO>> getRejectedProjects() {
         List<Project> rejected = projectService.getRejectedProjects();
 
@@ -201,7 +201,7 @@ public class ProjectController {
     // ================== Admin: Outdated projects (όλα) ==================
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use/outdated")
+    @GetMapping("/admin-use/outdated/ok-need")
     public ResponseEntity<List<ProjectSummaryDTO>> getAllOutdatedProjects() {
         List<Project> outdatedProjects = projectService.getAllOutdatedProjects();
 
@@ -319,7 +319,7 @@ public class ProjectController {
     // ================== Admin: Accepted projects ==================
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use/accepted")
+    @GetMapping("/admin-use/accepted/ok-need")
     public ResponseEntity<List<ProjectSummaryDTO>> getAcceptedProjects() {
         List<Project> accepted = projectService.getAcceptedProjects();
 
@@ -331,7 +331,7 @@ public class ProjectController {
     }
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use/all")
+    @GetMapping("/admin-use/all/ok-need")
     public ResponseEntity<List<ProjectSummaryDTO>> getAllProjects() {
         List<Project> projects = projectService.getProjects();
 

@@ -32,7 +32,7 @@ public class FreelancerController {
     // ================== Admin: λίστα freelancers ==================
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use")
+    @GetMapping("/admin-use/ok-need")
     public ResponseEntity<List<FreelancerSummaryDTO>> getFreelancers() {
         List<Freelancer> freelancers = freelancerService.getFreelancers();
 
@@ -45,7 +45,7 @@ public class FreelancerController {
 
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use/not-verified")
+    @GetMapping("/admin-use/not-verified/ok-need")
     public ResponseEntity<List<FreelancerSummaryDTO>> getNotVerifiedFreelancers() {
         List<Freelancer> notVerifiedFreelancers = freelancerService.getNotVerifiedFreelancer();
 
@@ -58,7 +58,7 @@ public class FreelancerController {
 
 
     @Secured("ROLE_ADMIN")
-    @PostMapping("/admin-use/{freelancerId}/verify")
+    @PostMapping("/admin-use/{freelancerId}/verify/ok-need")
     public ResponseEntity<FreelancerSummaryDTO> verifyFreelancer(@PathVariable("freelancerId") int freelancerId) {
         Freelancer freelancer = freelancerService.getFreelancer(freelancerId);
 
@@ -71,7 +71,7 @@ public class FreelancerController {
 
 
     @Secured("ROLE_ADMIN")
-    @DeleteMapping("/admin-use/{freelancerId}")
+    @DeleteMapping("/admin-use/{freelancerId}/ok-need")
     public ResponseEntity<Void> deleteFreelancer(@PathVariable("freelancerId") int freelancerId) {
         freelancerService.deleteFreelancer(freelancerId);
         return ResponseEntity.noContent().build();

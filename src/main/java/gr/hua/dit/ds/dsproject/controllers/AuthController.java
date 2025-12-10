@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/auth/works")
+@RequestMapping("/api/auth")
 public class AuthController {
 
     private final RoleRepository roleRepository;
@@ -67,7 +67,7 @@ public class AuthController {
 
     // ================== REST Login με JWT ==================
 
-    @PostMapping("/login")
+    @PostMapping("/login/ok-need")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
 
         // 1. Κάνουμε authenticate με username + password

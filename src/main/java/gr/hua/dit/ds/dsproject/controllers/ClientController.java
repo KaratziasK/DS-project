@@ -38,7 +38,7 @@ public class ClientController {
     }
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use")
+    @GetMapping("/admin-use/ok-need")
     public ResponseEntity<List<ClientDTO>> getClients() {
         return ResponseEntity.ok(clientService.getClientDTOs());
     }

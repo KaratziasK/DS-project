@@ -9,9 +9,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -21,14 +20,14 @@ import java.util.stream.Collectors;
 @Service
 public class UserService implements UserDetailsService {
 
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;   // ✅ ONLY ONE
 
-    private UserRepository userRepository;
-
-    private RoleRepository roleRepository;
-
-    private BCryptPasswordEncoder passwordEncoder;
-
-    public UserService(UserRepository userRepository, RoleRepository roleRepository, BCryptPasswordEncoder passwordEncoder) {
+    // ✅ Correct constructor
+    public UserService(UserRepository userRepository,
+                       RoleRepository roleRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
@@ -60,16 +59,15 @@ public class UserService implements UserDetailsService {
         } else {
             User user = opt.get();
             return new org.springframework.security.core.userdetails.User(
-                    user.getUsername(),   // ✅ χρησιμοποιούμε το username
+                    user.getUsername(),
                     user.getPassword(),
                     user.getRoles()
                             .stream()
-                            .map(role -> new SimpleGrantedAuthority(role.getName())) // καλύτερα role.getName()
+                            .map(role -> new SimpleGrantedAuthority(role.getName()))
                             .collect(Collectors.toSet())
             );
         }
     }
-
 
     @Transactional
     public Optional<User> findByUsername(String username) {
@@ -77,5 +75,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public Optional<User> findByEmail(String email){return userRepository.findByEmail(email);}
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
 }

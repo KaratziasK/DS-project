@@ -94,7 +94,8 @@ public class RequestController {
 
 
 
-    @GetMapping("")
+    @Secured("ROLE_ADMIN")
+    @GetMapping("/admin-use/ok-need")
     public ResponseEntity<List<RequestSummaryDTO>> getRequests() {
         List<Request> requests = requestService.getRequests();
 
@@ -133,7 +134,8 @@ public class RequestController {
         return dto;
     }
 
-    @GetMapping("/rejected")
+    @Secured("ROLE_ADMIN")
+    @GetMapping("/rejected/admin-use/ok-need")
     public ResponseEntity<List<RequestSummaryDTO>> getRejectedRequests() {
         List<Request> rejectedRequests = requestService.getRejectedRequests();
 
@@ -145,7 +147,7 @@ public class RequestController {
     }
 
 
-    @DeleteMapping("/rejected/{requestId}")
+    @DeleteMapping("/rejected/{requestId}/admin-use/ok-need")
     public ResponseEntity<Void> deleteRejectedRequest(@PathVariable int requestId) {
         requestService.deleteRequest(requestId);
         return ResponseEntity.noContent().build();
