@@ -50,7 +50,7 @@ public class ProjectController {
     // ================== Δημιουργία Project (Client) ==================
 
     @Secured("ROLE_CLIENT")
-    @PostMapping("/client-use/new")
+    @PostMapping("/client-use/new/ok-need")
     public ResponseEntity<?> createProject(
             @Valid @RequestBody ProjectCreateDTO projectDto,
             BindingResult bindingResult) {
@@ -216,7 +216,7 @@ public class ProjectController {
     // ================== Client: Unassigned, Assigned, Completed, Unassigned+Outdated ==================
 
     @Secured("ROLE_CLIENT")
-    @GetMapping("/client-use/all-projects")
+    @GetMapping("/client-use/all-projects/ok-need")
     public ResponseEntity<List<ProjectSummaryDTO>> getAllProjectForThisClient() {
         Client currentClient = clientService.getCurrentClient();
 
@@ -231,7 +231,7 @@ public class ProjectController {
 
 
     @Secured("ROLE_CLIENT")
-    @GetMapping("/client-use/unassigned")
+    @GetMapping("/client-use/unassigned/ok-need")
     public ResponseEntity<List<ProjectSummaryDTO>> getUnassignedProjectsForClient() {
         Client currentClient = clientService.getCurrentClient();
         List<Project> unassigned = projectService.getUnassignedProjects(currentClient);
@@ -245,7 +245,7 @@ public class ProjectController {
 
 
     @Secured("ROLE_CLIENT")
-    @GetMapping("/client-use/assigned")
+    @GetMapping("/client-use/assigned/ok-need")
     public ResponseEntity<List<AssignedProjectDTO>> getAssignedProjectsForClient() {
         Client currentClient = clientService.getCurrentClient();
         List<Project> assignedProjects = projectService.getAssignedProjects(currentClient);
@@ -280,7 +280,7 @@ public class ProjectController {
 
 
     @Secured("ROLE_CLIENT")
-    @GetMapping("/client-use/unassigned-outdated")
+    @GetMapping("/client-use/unassigned-outdated/ok-need")
     public ResponseEntity<List<ProjectSummaryDTO>> getUnassignedAndOutdatedProjectsForClient() {
         Client currentClient = clientService.getCurrentClient();
         List<Project> unassignedOutdated = projectService.getUnassignedAndOutdatedProjects(currentClient);
@@ -294,7 +294,7 @@ public class ProjectController {
 
 
     @Secured("ROLE_CLIENT")
-    @DeleteMapping("/client-use/unassigned-outdated/{projectId}")
+    @DeleteMapping("/client-use/unassigned-outdated/{projectId}/ok-need")
     public ResponseEntity<List<Project>> deleteUnassignedOutdatedProject(@PathVariable int projectId) {
         projectService.deleteProject(projectId);
         Client currentClient = clientService.getCurrentClient();
@@ -303,7 +303,7 @@ public class ProjectController {
     }
 
     @Secured("ROLE_CLIENT")
-    @GetMapping("/client-use/completed")
+    @GetMapping("/client-use/completed/ok-need")
     public ResponseEntity<List<AssignedProjectDTO>> getCompletedProjectsForClient() {
         Client currentClient = clientService.getCurrentClient();
         List<Project> completedProjects = projectService.getCompletedProjects(currentClient);

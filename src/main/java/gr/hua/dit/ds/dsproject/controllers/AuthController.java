@@ -26,12 +26,12 @@ public class AuthController {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
-    private final JwtUtils jwtUtils;   // ✅ προσθήκη
+    private final JwtUtils jwtUtils;
 
     public AuthController(RoleRepository roleRepository,
                           UserRepository userRepository,
                           AuthenticationManager authenticationManager,
-                          JwtUtils jwtUtils) {          // ✅ injection JwtUtils
+                          JwtUtils jwtUtils) {
         this.roleRepository = roleRepository;
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;

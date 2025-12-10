@@ -64,7 +64,7 @@ public class ClientController {
 
 
     @Secured("ROLE_CLIENT")
-    @GetMapping("/client-use/my-profile")
+    @GetMapping("/client-use/my-profile/ok-need")
     public ResponseEntity<ClientProfileDTO> getMyProfile() {
         Client client = clientService.getCurrentClient();
         ClientProfileDTO dto = toClientProfileDTO(client);
@@ -89,7 +89,7 @@ public class ClientController {
     }
 
     @Secured("ROLE_CLIENT")
-    @PostMapping("/client-use/edit-profile")
+    @PostMapping("/client-use/edit-profile/ok-need")
     public ResponseEntity<?> updateProfile(
             @Valid @RequestBody ClientProfileUpdateDTO dto,
             BindingResult bindingResult) {

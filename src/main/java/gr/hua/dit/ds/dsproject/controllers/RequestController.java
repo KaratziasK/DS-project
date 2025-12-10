@@ -35,7 +35,7 @@ public class RequestController {
 
     // Προαιρετικά, αν θέλεις να το βλέπει μόνο client:
     @Secured("ROLE_CLIENT")
-    @GetMapping("/client-use/get-requests-from-freelancer-for-this-project/{projectId}")
+    @GetMapping("/client-use/get-requests-from-freelancer-for-this-project/{projectId}/ok-need")
     public ResponseEntity<List<RequestSummaryDTO>> getRequestsFromFreelancersForThisProject(
             @PathVariable int projectId) {
 
@@ -50,7 +50,7 @@ public class RequestController {
     }
 
     @Secured("ROLE_CLIENT")
-    @PostMapping("/client-use/accept-freelancer-request/{requestId}")
+    @PostMapping("/client-use/accept-freelancer-request/{requestId}/ok-need")
     public ResponseEntity<List<RequestSummaryDTO>> acceptFreelancerRequest(
             @PathVariable int requestId) {
 
