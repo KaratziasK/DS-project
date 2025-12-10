@@ -96,7 +96,7 @@ public class ProjectController {
     // ================== Assign Request σε Project (Freelancer) ==================
 
     @Secured("ROLE_FREELANCER")
-    @PostMapping("/{projectId}/make-request")
+    @PostMapping("/{projectId}/make-request/freelancer-use/ok-need")
     public ResponseEntity<RequestSummaryDTO> assignRequestToProject(@PathVariable int projectId) {
 
         Freelancer freelancer = freelancerService.getCurrentFreelancer();

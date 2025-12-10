@@ -80,7 +80,7 @@ public class FreelancerController {
     // ================== Freelancer: διαθέσιμα projects ==================
 
     @Secured("ROLE_FREELANCER")
-    @GetMapping("/freelancer-use/projects-available-to-request")
+    @GetMapping("/freelancer-use/projects-available-to-request/ok-need")
     public ResponseEntity<Map<String, Object>> getProjectsForFreelancer() {
         Freelancer freelancer = freelancerService.getCurrentFreelancer();
         List<Project> acceptedProjects = projectService.getAcceptedProjects();
@@ -121,7 +121,7 @@ public class FreelancerController {
     // ================== Freelancer: τα δικά του requests ==================
 
     @Secured("ROLE_FREELANCER")
-    @GetMapping("/freelancer-use/my-requests")
+    @GetMapping("/freelancer-use/my-requests/ok-need")
     public ResponseEntity<List<RequestSummaryDTO>> getMyRequests() {
         Freelancer freelancer = freelancerService.getCurrentFreelancer();
 
@@ -167,7 +167,7 @@ public class FreelancerController {
     // ================== Freelancer: assignments ==================
 
     @Secured("ROLE_FREELANCER")
-    @GetMapping("/freelancer-use/my-assignments")
+    @GetMapping("/freelancer-use/my-assignments/ok-need")
     public ResponseEntity<List<FreelancerAssignmentSummaryDTO>> getMyAssignments() {
         Freelancer freelancer = freelancerService.getCurrentFreelancer();
 
@@ -208,7 +208,7 @@ public class FreelancerController {
     // ================== Freelancer: profile ==================
 
     @Secured("ROLE_FREELANCER")
-    @GetMapping("/freelancer-use/my-profile")
+    @GetMapping("/freelancer-use/my-profile/ok-need")
     public ResponseEntity<FreelancerProfileDTO> getMyProfile() {
         Freelancer freelancer = freelancerService.getCurrentFreelancer();
         FreelancerProfileDTO dto = toFreelancerProfileDTO(freelancer);
@@ -237,7 +237,7 @@ public class FreelancerController {
 
 
     @Secured("ROLE_FREELANCER")
-    @PutMapping("/freelancer-use/my-profile")
+    @PutMapping("/freelancer-use/my-profile/ok-need")
     public ResponseEntity<?> updateMyProfile(
             @Valid @RequestBody FreelancerProfileUpdateDTO dto,
             BindingResult bindingResult) {
