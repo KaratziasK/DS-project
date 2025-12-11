@@ -10,6 +10,27 @@ public class AssignmentSummaryDTO {
     private LocalDate dateSubmitted;
     private LocalDate deadline;
     private String status;
+    private String projectName;
+    private String projectDescription;
+    private String freelancerFullName;
+    private String clientFullName;
+
+    public String getFreelancerFullName() {
+        return freelancerFullName;
+    }
+
+    public void setFreelancerFullName(String freelancerFullName) {
+        this.freelancerFullName = freelancerFullName;
+    }
+
+    public String getClientFullName() {
+        return clientFullName;
+    }
+
+    public void setClientFullName(String clientFullName) {
+        this.clientFullName = clientFullName;
+    }
+
 
     public Integer getId() {
         return id;
@@ -51,5 +72,21 @@ public class AssignmentSummaryDTO {
     }
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getProjectName() {
+        return projectName;
+    }
+
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
+
+    public String getProjectDescription() {
+        return projectDescription;
+    }
+
+    public void setProjectDescription(String projectDescription) {
+        this.projectDescription = projectDescription;
     }
 }

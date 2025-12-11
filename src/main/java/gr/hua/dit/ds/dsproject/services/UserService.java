@@ -1,5 +1,9 @@
 package gr.hua.dit.ds.dsproject.services;
 
+import gr.hua.dit.ds.dsproject.dto.RegisterClientRequest;
+import gr.hua.dit.ds.dsproject.dto.RegisterFreelancerRequest;
+import gr.hua.dit.ds.dsproject.entities.Client;
+import gr.hua.dit.ds.dsproject.entities.Freelancer;
 import gr.hua.dit.ds.dsproject.entities.Role;
 import gr.hua.dit.ds.dsproject.entities.User;
 import gr.hua.dit.ds.dsproject.repositories.RoleRepository;
@@ -12,9 +16,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,15 +24,18 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;   // ✅ ONLY ONE
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     // ✅ Correct constructor
     public UserService(UserRepository userRepository,
                        RoleRepository roleRepository,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       EmailService emailService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -78,4 +83,95 @@ public class UserService implements UserDetailsService {
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
+
+    @Transactional
+    public Map<String, Object> registerClient(RegisterClientRequest request) {
+
+        // 1. Business validation
+        Map<String, String> errors = new HashMap<>();
+
+        if (findByUsername(request.getUsername()).isPresent()) {
+            errors.put("username", "Username is already in use. Please choose another one.");
+        }
+        if (findByEmail(request.getEmail()).isPresent()) {
+            errors.put("email", "Email is already in use. Please use another one.");
+        }
+
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(errors.toString());
+        }
+
+        // 2. Create User
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(request.getPassword());
+
+        // 3. Create Client
+        Client client = new Client();
+        client.setFirstName(request.getFirstName());
+        client.setLastName(request.getLastName());
+        client.setPhone(request.getPhone());
+
+        // 4. Link
+        user.setClient(client);
+        client.setUser(user);
+
+        // 5. Save + assign role
+        Integer id = saveUser(user, "ROLE_CLIENT");
+
+        // 6. Email
+        emailService.sendSignupEmailToClient(user.getEmail(), client.getFirstName() + " " + client.getLastName());
+
+        // 7. Build response
+        return Map.of(
+                "id", id,
+                "message", "Client user created successfully",
+                "username", user.getUsername(),
+                "email", user.getEmail()
+        );
+    }
+
+    @Transactional
+    public Map<String, Object> registerFreelancer(RegisterFreelancerRequest request) {
+
+        Map<String, String> errors = new HashMap<>();
+
+        if (findByUsername(request.getUsername()).isPresent()) {
+            errors.put("username", "Username is already in use. Please choose another one.");
+        }
+        if (findByEmail(request.getEmail()).isPresent()) {
+            errors.put("email", "Email is already in use. Please use another one.");
+        }
+
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(errors.toString());
+        }
+
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(request.getPassword());
+
+        Freelancer freelancer = new Freelancer();
+        freelancer.setFirstName(request.getFirstName());
+        freelancer.setLastName(request.getLastName());
+        freelancer.setPhone(request.getPhone());
+        freelancer.setSkills(request.getSkills());
+
+        user.setFreelancer(freelancer);
+        freelancer.setUser(user);
+
+        Integer id = saveUser(user, "ROLE_FREELANCER");
+
+        emailService.sendSignupEmailToFreelancer(user.getEmail(), freelancer.getFirstName() + " " + freelancer.getLastName());
+
+        return Map.of(
+                "id", id,
+                "message", "Freelancer user created successfully",
+                "username", user.getUsername(),
+                "email", user.getEmail()
+        );
+    }
+
 }

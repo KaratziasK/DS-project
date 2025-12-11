@@ -1,6 +1,9 @@
 package gr.hua.dit.ds.dsproject.services;
 
 
+import gr.hua.dit.ds.dsproject.dto.AssignedProjectDTO;
+import gr.hua.dit.ds.dsproject.dto.ProjectCreateDTO;
+import gr.hua.dit.ds.dsproject.dto.ProjectSummaryDTO;
 import gr.hua.dit.ds.dsproject.entities.*;
 import gr.hua.dit.ds.dsproject.repositories.ProjectRepository;
 import gr.hua.dit.ds.dsproject.repositories.UserRepository;
@@ -9,17 +12,19 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
-    private final UserRepository userRepository;
+    private final ClientService clientService;
 
-    public ProjectService(ProjectRepository projectRepository,  UserRepository userRepository) {
+    public ProjectService(ProjectRepository projectRepository, ClientService clientService) {
         this.projectRepository = projectRepository;
-        this.userRepository = userRepository;
+        this.clientService = clientService;
     }
 
     @Transactional
@@ -162,6 +167,7 @@ public class ProjectService {
             }
         }
     }
+
     @Transactional
     public List<Project> getUnassignedProjects(Client  client) {
         List<Project> projects = projectRepository.findAll();
@@ -229,6 +235,237 @@ public class ProjectService {
         }
 
         return clientProjects;
+    }
+
+    @Transactional
+    public Map<String, Object> getAvailableProjectsForFreelancer(Freelancer freelancer) {
+
+        // 1. Όλα τα accepted projects
+        List<Project> acceptedProjects = getAcceptedProjects();
+
+        // 2. Projects που έχει ήδη κάνει request ο freelancer
+        List<Project> requestedProjects =
+                getRequestedProjects(acceptedProjects, freelancer.getRequests());
+
+        // 3. Projects που δεν έχει κάνει request και δεν έχουν assignment
+        List<Project> notRequestedNotAssigned =
+                getNotRequestedAndUnassignedProjects(acceptedProjects, requestedProjects);
+
+        // 4. Projects που δεν έχουν ξεπεράσει την ημερομηνία
+        List<Project> available =
+                getProjectNotOutDated(notRequestedNotAssigned);
+
+        // 5. Μετατροπή σε DTOs
+        List<ProjectSummaryDTO> dtoList = available.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+
+        // 6. Επιστρέφουμε και τα δύο πράγματα
+        Map<String, Object> body = new HashMap<>();
+        body.put("notRequestedProjects", dtoList);
+        body.put("freelancerVerified", freelancer.getVerified());
+
+        return body;
+    }
+
+
+    private ProjectSummaryDTO toProjectSummaryDTO(Project project) {
+        ProjectSummaryDTO dto = new ProjectSummaryDTO();
+
+        dto.setId(project.getId());
+        dto.setTitle(project.getTitle());
+        dto.setDescription(project.getDescription());
+        dto.setPaymentAmount(project.getPaymentAmount());
+        dto.setProjectStatus(
+                project.getProjectStatus() != null
+                        ? project.getProjectStatus().name()
+                        : null
+        );
+        dto.setDeadline(project.getDeadline());
+
+        return dto;
+    }
+
+    @Transactional
+    public ProjectSummaryDTO createProjectForCurrentClient(ProjectCreateDTO projectDto) {
+
+        Client currentClient = clientService.getCurrentClient();
+        if (currentClient == null) {
+            // Το πιάνουμε μετά στον controller ως 403
+            throw new IllegalStateException("No client is associated with the current user");
+        }
+
+        Project project = toProjectEntity(projectDto, currentClient);
+        Project saved = saveProject(project);
+        return toProjectSummaryDTO(saved);
+    }
+
+    private Project toProjectEntity(ProjectCreateDTO dto, Client client) {
+        Project project = new Project();
+
+        project.setTitle(dto.getTitle());
+        project.setDescription(dto.getDescription());
+        project.setPaymentAmount(dto.getPaymentAmount());
+        project.setDeadline(dto.getDeadline());
+        project.setClient(client);
+        // ό,τι άλλα πεδία έχεις (status = Pending κλπ)
+
+        return project;
+    }
+
+    @Transactional
+    public List<ProjectSummaryDTO> getPendingProjectDTOs() {
+        List<Project> pending = getProjectsPending();
+
+        return pending.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+    }
+
+    @Transactional
+    public ProjectSummaryDTO acceptProject(int projectId) {
+        Project project = getProject(projectId);
+
+        project.setProjectStatus(Status.Accepted);
+
+        Project saved = saveProject(project);
+
+        return toProjectSummaryDTO(saved);
+    }
+
+    @Transactional
+    public ProjectSummaryDTO rejectProject(int projectId) {
+        Project project = getProject(projectId);
+        project.setProjectStatus(Status.Rejected);
+        Project saved = saveProject(project);
+        return toProjectSummaryDTO(saved);
+    }
+
+    @Transactional
+    public List<ProjectSummaryDTO> getRejectedProjectDTOs() {
+        List<Project> rejected = getRejectedProjects();
+
+        return rejected.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+    }
+
+    @Transactional
+    public List<ProjectSummaryDTO> getAllOutdatedProjectDTOs() {
+        List<Project> outdated = getAllOutdatedProjects();
+
+        return outdated.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+    }
+
+    @Transactional
+    public List<ProjectSummaryDTO> getAllProjectsForCurrentClient() {
+
+        Client currentClient = clientService.getCurrentClient();
+
+        List<Project> projects = getAllProjectForThisClient(currentClient);
+
+        return projects.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+    }
+
+    @Transactional
+    public List<ProjectSummaryDTO> getUnassignedProjectsForCurrentClient() {
+
+        Client currentClient = clientService.getCurrentClient();
+
+        List<Project> unassigned = getUnassignedProjects(currentClient);
+
+        return unassigned.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+    }
+
+    @Transactional
+    public List<AssignedProjectDTO> getAssignedProjectsForCurrentClient() {
+        Client currentClient = clientService.getCurrentClient();
+
+        List<Project> assignedProjects = getAssignedProjects(currentClient);
+
+        return assignedProjects.stream()
+                .map(this::toAssignedProjectDTO)
+                .toList();
+    }
+
+    private AssignedProjectDTO toAssignedProjectDTO(Project project) {
+        AssignedProjectDTO dto = new AssignedProjectDTO();
+
+        dto.setProjectId(project.getId());
+        dto.setTitle(project.getTitle());
+        dto.setPaymentAmount(project.getPaymentAmount());
+        dto.setDeadline(project.getDeadline());
+
+        if (project.getAssignment() != null &&
+                project.getAssignment().getFreelancer() != null &&
+                project.getAssignment().getFreelancer().getUser() != null) {
+            dto.setFreelancerUsername(
+                    project.getAssignment().getFreelancer().getUser().getUsername()
+            );
+        }
+
+        return dto;
+    }
+
+    @Transactional
+    public List<ProjectSummaryDTO> getUnassignedAndOutdatedProjectsForCurrentClient() {
+
+        Client currentClient = clientService.getCurrentClient();
+
+        List<Project> unassignedOutdated = getUnassignedAndOutdatedProjects(currentClient);
+
+        return unassignedOutdated.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+    }
+
+    @Transactional
+    public List<AssignedProjectDTO> getCompletedProjectsForCurrentClient() {
+        Client currentClient = clientService.getCurrentClient();
+
+        List<Project> completedProjects = getCompletedProjects(currentClient);
+
+        return completedProjects.stream()
+                .map(this::toAssignedProjectDTO)
+                .toList();
+    }
+
+    @Transactional
+    public List<ProjectSummaryDTO> deleteUnassignedOutdatedProjectAndReturnList(int projectId) {
+
+        deleteProject(projectId);
+
+        Client currentClient = clientService.getCurrentClient();
+
+        List<Project> updatedList = getUnassignedAndOutdatedProjects(currentClient);
+
+        return updatedList.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+    }
+
+    @Transactional
+    public List<ProjectSummaryDTO> getAcceptedProjectDTOs() {
+        List<Project> accepted = getAcceptedProjects();
+
+        return accepted.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
+    }
+
+    @Transactional
+    public List<ProjectSummaryDTO> getAllProjectDTOs() {
+        List<Project> projects = getProjects();
+
+        return projects.stream()
+                .map(this::toProjectSummaryDTO)
+                .toList();
     }
 
 }

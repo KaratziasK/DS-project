@@ -1,18 +1,23 @@
 package gr.hua.dit.ds.dsproject.services;
 
-import gr.hua.dit.ds.dsproject.dto.ClientDTO;
+import gr.hua.dit.ds.dsproject.dto.*;
 import gr.hua.dit.ds.dsproject.entities.Client;
 import gr.hua.dit.ds.dsproject.entities.User;
 import gr.hua.dit.ds.dsproject.repositories.ClientRepository;
 import gr.hua.dit.ds.dsproject.repositories.UserRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import gr.hua.dit.ds.dsproject.dto.ClientDTO;
-import gr.hua.dit.ds.dsproject.dto.ProjectSummaryDTO;
 import gr.hua.dit.ds.dsproject.entities.Project;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 
 import java.util.stream.Collectors;
 @Service
@@ -112,4 +117,31 @@ public class ClientService {
         return dto;
     }
 
+    public ClientProfileDTO toClientProfileDTO(Client client) {
+        ClientProfileDTO dto = new ClientProfileDTO();
+
+        dto.setClientId(client.getId());
+        dto.setFirstName(client.getFirstName());
+        dto.setLastName(client.getLastName());
+        dto.setPhone(client.getPhone());
+
+        if (client.getUser() != null) {
+            dto.setUserId(client.getUser().getId());
+            dto.setEmail(client.getUser().getEmail());
+            dto.setUsername(client.getUser().getUsername());
+        }
+
+        return dto;
+    }
+
+    @Transactional
+    public void updateCurrentClientProfile(ClientProfileUpdateDTO dto) {
+        Client client = getCurrentClient();
+
+        client.setFirstName(dto.getFirstName());
+        client.setLastName(dto.getLastName());
+        client.setPhone(dto.getPhone());
+
+        updateClient(client);
+    }
 }
