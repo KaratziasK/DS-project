@@ -6,7 +6,6 @@ public class ClientProfileUpdateDTO {
     private String lastName;
     private String phone;
 
-    // getters & setters
 
     public String getFirstName() {
         return firstName;

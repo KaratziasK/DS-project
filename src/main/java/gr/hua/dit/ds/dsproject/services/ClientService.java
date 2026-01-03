@@ -35,18 +35,15 @@ public class ClientService {
 
     @Transactional
     public Client getCurrentClient() {
-        // 1. πάρε το username από το SecurityContext
         String username = SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getName();
 
         System.out.println(">>> Authenticated username = " + username);
 
-        // 2. βρες το User στη βάση
         User user = userService.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
-        // 3. πάρε το Client από το User
         Client client = user.getClient();
         if (client == null) {
             throw new RuntimeException("Current user is not a client: " + username);
@@ -107,7 +104,6 @@ public class ClientService {
         dto.setDescription(project.getDescription());
         dto.setPaymentAmount(project.getPaymentAmount());
 
-        // Αν projectStatus είναι enum, κάνε toString()
         dto.setProjectStatus(
                 project.getProjectStatus() != null ? project.getProjectStatus().toString() : null
         );

@@ -77,8 +77,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    // ============= Helper =============
-
     private ResponseEntity<?> buildErrorResponse(HttpStatus status,
                                                  String message,
                                                  String path) {

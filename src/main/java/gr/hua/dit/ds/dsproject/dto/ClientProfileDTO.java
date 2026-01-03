@@ -11,7 +11,6 @@ public class ClientProfileDTO {
     private String lastName;
     private String phone;
 
-    // Getters & Setters
 
     public Integer getUserId() {
         return userId;

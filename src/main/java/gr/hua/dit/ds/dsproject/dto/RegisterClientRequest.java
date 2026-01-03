@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotNull;
 
 public class RegisterClientRequest {
 
-    // User fields
     @NotNull
     @jakarta.validation.constraints.NotBlank
     private String username;
@@ -17,7 +16,6 @@ public class RegisterClientRequest {
     @jakarta.validation.constraints.NotBlank
     private String password;
 
-    // Client fields
     @NotNull
     @jakarta.validation.constraints.NotBlank
     private String firstName;

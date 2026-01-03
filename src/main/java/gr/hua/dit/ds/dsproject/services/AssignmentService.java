@@ -43,14 +43,12 @@ public class AssignmentService {
         dto.setDateSubmitted(assignment.getDateSubmitted());
         dto.setStatus(assignment.getStatus());
 
-        // ----- Project info -----
         if (assignment.getProject() != null) {
             dto.setProjectName(assignment.getProject().getTitle());
             dto.setProjectDescription(assignment.getProject().getDescription());
             dto.setDeadline(assignment.getProject().getDeadline());
         }
 
-        // ----- Freelancer info -----
         if (assignment.getFreelancer() != null) {
             var freelancer = assignment.getFreelancer();
 
@@ -63,7 +61,6 @@ public class AssignmentService {
             }
         }
 
-        // ----- Client info -----
         if (assignment.getProject() != null &&
                 assignment.getProject().getClient() != null) {
 

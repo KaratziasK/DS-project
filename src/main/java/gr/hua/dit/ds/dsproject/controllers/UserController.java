@@ -2,15 +2,8 @@ package gr.hua.dit.ds.dsproject.controllers;
 
 import gr.hua.dit.ds.dsproject.dto.RegisterClientRequest;
 import gr.hua.dit.ds.dsproject.dto.RegisterFreelancerRequest;
-import gr.hua.dit.ds.dsproject.entities.Client;
-import gr.hua.dit.ds.dsproject.entities.Freelancer;
-import gr.hua.dit.ds.dsproject.entities.User;
-import gr.hua.dit.ds.dsproject.services.ClientService;
-import gr.hua.dit.ds.dsproject.services.EmailService;
-import gr.hua.dit.ds.dsproject.services.FreelancerService;
 import gr.hua.dit.ds.dsproject.services.UserService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -30,7 +23,7 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping("/register/client/ok-need")
+    @PostMapping("/register/client")
     public ResponseEntity<?> registerClient(
             @Valid @RequestBody RegisterClientRequest request,
             BindingResult bindingResult) {
@@ -43,7 +36,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PostMapping("/register/freelancer/ok-need")
+    @PostMapping("/register/freelancer")
     public ResponseEntity<?> registerFreelancer(
             @Valid @RequestBody RegisterFreelancerRequest request,
             BindingResult bindingResult) {

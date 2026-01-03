@@ -53,7 +53,6 @@ public class Assignment {
                 '}';
     }
     public String getStatus() {
-        // Ελέγχει αν η τρέχουσα ημερομηνία είναι πριν από το deadline του project
         if (LocalDate.now().isBefore(this.getProject().getDeadline())) {
             return "Under Construction";
         } else {

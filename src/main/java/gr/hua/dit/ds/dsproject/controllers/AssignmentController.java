@@ -24,14 +24,14 @@ public class AssignmentController {
     }
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use/ok-need")
+    @GetMapping("/admin-use")
     public ResponseEntity<List<AssignmentSummaryDTO>> getAssignments() {
         List<AssignmentSummaryDTO> dtoList = assignmentService.getAssignmentSummaries();
         return ResponseEntity.ok(dtoList);
     }
 
     @Secured("ROLE_CLIENT")
-    @PostMapping("/client-use/accept-freelancer-request/{requestId}/ok-need")
+    @PostMapping("/client-use/accept-freelancer-request/{requestId}")
     public ResponseEntity<List<RequestSummaryDTO>> acceptFreelancerRequest(
             @PathVariable int requestId) {
 

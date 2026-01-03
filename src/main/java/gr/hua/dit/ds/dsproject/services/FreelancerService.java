@@ -54,10 +54,8 @@ public class FreelancerService {
         dto.setLastName(freelancer.getLastName());
         dto.setPhone(freelancer.getPhone());
 
-        // Skills (αν είναι String ή concatenated από entity)
         dto.setSkills(freelancer.getSkills());
 
-        // Verified status
         dto.setVerified(freelancer.getVerified());
 
         return dto;
@@ -144,30 +142,25 @@ public class FreelancerService {
         List<Assignment> assignments = freelancer.getAssignments();
         List<Request> requests = freelancer.getRequests();
 
-        // Αποσύνδεση από τα requests
         if (requests != null && !requests.isEmpty()) {
             for (Request request : requests) {
-                request.setFreelancer(null);  // Αποσύνδεση του freelancer από το request
-                requestRepository.save(request); // Αποθήκευση για την ανανέωση της κατάστασης
+                request.setFreelancer(null);
+                requestRepository.save(request);
             }
-            // Διαγραφή των requests
             requestRepository.deleteAll(requests);
         }
 
-        // Αποσύνδεση από τα assignments
         if (assignments != null && !assignments.isEmpty()) {
             for (Assignment assignment : assignments) {
-                assignment.setFreelancer(null);  // Αποσύνδεση του freelancer από το assignment
+                assignment.setFreelancer(null);
                 Project project = assignment.getProject();
                 project.setAssignment(null);
                 assignment.setProject(null);
                 projectRepository.save(project);
-                assignmentRepository.save(assignment); // Αποθήκευση για την ανανέωση της κατάστασης
+                assignmentRepository.save(assignment);
             }
-            // Διαγραφή των assignments
             assignmentRepository.deleteAll(assignments);
         }
-        // Διαγραφή του freelancer
         freelancerRepository.delete(freelancer);
 
         List<Assignment> allAssignments = assignmentRepository.findAll();
@@ -250,7 +243,6 @@ public class FreelancerService {
 
     @Transactional
     public FreelancerProfileDTO updateCurrentFreelancerProfile(FreelancerProfileUpdateDTO dto) {
-        // Πάντα από το token, όχι από το body
         Freelancer freelancer = getCurrentFreelancer();
 
         freelancer.setFirstName(dto.getFirstName());
@@ -265,13 +257,8 @@ public class FreelancerService {
 
     @Transactional
     public RequestSummaryDTO makeRequestForProject(int projectId) {
-        // 1. Πάντα από το token
         Freelancer freelancer = getCurrentFreelancer();
-
-        // 2. Δημιουργία Request για το συγκεκριμένο project
         Request newRequest = projectService.assignRequestToProject(projectId, freelancer);
-
-        // 3. Mapping σε DTO (λογική στο RequestService)
         return requestService.toRequestSummaryDTO(newRequest);
     }
 

@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotNull;
 
 public class RegisterFreelancerRequest {
 
-    // User fields
     @NotNull
     @jakarta.validation.constraints.NotBlank
     private String username;
@@ -17,7 +16,6 @@ public class RegisterFreelancerRequest {
     @jakarta.validation.constraints.NotBlank
     private String password;
 
-    // Freelancer fields
     @NotNull
     @jakarta.validation.constraints.NotBlank
     private String firstName;

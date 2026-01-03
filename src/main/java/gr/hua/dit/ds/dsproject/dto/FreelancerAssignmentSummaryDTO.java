@@ -19,7 +19,6 @@ public class FreelancerAssignmentSummaryDTO {
     private String clientPhone;
     private String clientEmail;
 
-    // Getters & Setters
 
     public Integer getAssignmentId() {
         return assignmentId;

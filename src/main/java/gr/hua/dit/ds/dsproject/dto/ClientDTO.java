@@ -9,7 +9,6 @@ public class ClientDTO {
     private String lastName;
     private String phone;
 
-    // Αν δεν θες τα projects εδώ, μπορείς να το αφαιρέσεις τελείως
     private List<ProjectSummaryDTO> projects;
 
     public Integer getId() {

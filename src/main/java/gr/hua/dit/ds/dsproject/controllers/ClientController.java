@@ -3,7 +3,6 @@ package gr.hua.dit.ds.dsproject.controllers;
 import gr.hua.dit.ds.dsproject.dto.ClientDTO;
 import gr.hua.dit.ds.dsproject.dto.ClientProfileDTO;
 import gr.hua.dit.ds.dsproject.dto.ClientProfileUpdateDTO;
-import gr.hua.dit.ds.dsproject.entities.Client;
 import gr.hua.dit.ds.dsproject.services.ClientService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -27,19 +26,19 @@ public class ClientController {
     }
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use/ok-need")
+    @GetMapping("/admin-use")
     public ResponseEntity<List<ClientDTO>> getClients() {
         return ResponseEntity.ok(clientService.getClientDTOs());
     }
 
     @Secured("ROLE_CLIENT")
-    @GetMapping("/client-use/my-profile/ok-need")
+    @GetMapping("/client-use/my-profile")
     public ResponseEntity<ClientProfileDTO> getMyProfile() {
         return ResponseEntity.ok(clientService.toClientProfileDTO(clientService.getCurrentClient()));
     }
 
     @Secured("ROLE_CLIENT")
-    @PostMapping("/client-use/edit-profile/ok-need")
+    @PostMapping("/client-use/edit-profile")
     public ResponseEntity<?> updateProfile(
             @Valid @RequestBody ClientProfileUpdateDTO dto,
             BindingResult bindingResult) {

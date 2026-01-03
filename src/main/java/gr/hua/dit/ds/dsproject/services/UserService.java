@@ -25,17 +25,13 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService;
 
-    // ✅ Correct constructor
     public UserService(UserRepository userRepository,
                        RoleRepository roleRepository,
-                       PasswordEncoder passwordEncoder,
-                       EmailService emailService) {
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
-        this.emailService = emailService;
     }
 
     @Transactional
@@ -87,7 +83,6 @@ public class UserService implements UserDetailsService {
     @Transactional
     public Map<String, Object> registerClient(RegisterClientRequest request) {
 
-        // 1. Business validation
         Map<String, String> errors = new HashMap<>();
 
         if (findByUsername(request.getUsername()).isPresent()) {
@@ -101,29 +96,22 @@ public class UserService implements UserDetailsService {
             throw new IllegalArgumentException(errors.toString());
         }
 
-        // 2. Create User
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPassword(request.getPassword());
 
-        // 3. Create Client
         Client client = new Client();
         client.setFirstName(request.getFirstName());
         client.setLastName(request.getLastName());
         client.setPhone(request.getPhone());
 
-        // 4. Link
         user.setClient(client);
         client.setUser(user);
 
-        // 5. Save + assign role
         Integer id = saveUser(user, "ROLE_CLIENT");
 
-        // 6. Email
-        emailService.sendSignupEmailToClient(user.getEmail(), client.getFirstName() + " " + client.getLastName());
 
-        // 7. Build response
         return Map.of(
                 "id", id,
                 "message", "Client user created successfully",
@@ -164,7 +152,6 @@ public class UserService implements UserDetailsService {
 
         Integer id = saveUser(user, "ROLE_FREELANCER");
 
-        emailService.sendSignupEmailToFreelancer(user.getEmail(), freelancer.getFirstName() + " " + freelancer.getLastName());
 
         return Map.of(
                 "id", id,

@@ -24,8 +24,6 @@ public class RequestService {
         this.assignmentService = assignmentService;
     }
 
-    // ---------------- Βασικές CRUD / Queries ----------------
-
     @Transactional
     public Request getRequest(Integer id) {
         return requestRepository.findById(id)
@@ -34,7 +32,6 @@ public class RequestService {
 
     @Transactional
     public List<Request> getRequestsByProjectID(Integer projectId) {
-        // Προτιμάμε απευθείας query στο repository
         return requestRepository.findByProjectId(projectId);
     }
 
@@ -66,18 +63,14 @@ public class RequestService {
         requestRepository.deleteById(requestId);
     }
 
-    // ---------------- Business logic: acceptFreelancerRequest ----------------
 
     @Transactional
     public List<RequestSummaryDTO> acceptFreelancerRequest(int requestId) {
-        // 1. Φέρνουμε το συγκεκριμένο request
         Request acceptedRequest = getRequest(requestId);
         Project project = acceptedRequest.getProject();
 
-        // 2. Όλα τα requests για αυτό το project
         List<Request> requestsForProject = getRequestsByProjectID(project.getId());
 
-        // 3. Accepted το επιλεγμένο, Rejected όλα τα υπόλοιπα
         for (Request req : requestsForProject) {
             if (req.getId().equals(requestId)) {
                 req.setRequestStatus(Status.Accepted);
@@ -87,24 +80,19 @@ public class RequestService {
             saveRequest(req);
         }
 
-        // 4. Δημιουργούμε Assignment για τον επιλεγμένο freelancer
-        Assignment assignment = new Assignment();   // dateSubmitted μπαίνει μόνο του
+        Assignment assignment = new Assignment();
         assignment.setProject(project);
         assignment.setFreelancer(acceptedRequest.getFreelancer());
 
-        // (προαιρετικό για bidirectional συνέπεια στη μνήμη)
         project.setAssignment(assignment);
-        // acceptedRequest.getFreelancer().getAssignments().add(assignment);
 
         assignmentService.saveAssignment(assignment);
 
-        // 5. Γυρνάμε πίσω τη λίστα σε DTOs
         return requestsForProject.stream()
                 .map(this::toRequestSummaryDTO)
                 .toList();
     }
 
-    // ===== Helper για mapping Request -> RequestSummaryDTO =====
     public RequestSummaryDTO toRequestSummaryDTO(Request request) {
         RequestSummaryDTO dto = new RequestSummaryDTO();
 

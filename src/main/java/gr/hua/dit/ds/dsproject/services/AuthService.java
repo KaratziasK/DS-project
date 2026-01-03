@@ -35,7 +35,6 @@ public class AuthService {
         this.jwtUtils = jwtUtils;
     }
 
-    // ================== Init roles + secret admin ==================
 
     @PostConstruct
     public void setup() {
@@ -62,32 +61,25 @@ public class AuthService {
         userRepository.save(admin);
     }
 
-    // ================== Login logic ==================
 
     public LoginResponseDTO login(String username, String password) {
 
-        // 1. Κάνουμε authenticate με username + password
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(username, password)
         );
 
-        // 2. Παράγουμε JWT token
         String jwt = jwtUtils.generateJwtToken(authentication);
 
-        // 3. Παίρνουμε principal (Spring Security user)
         org.springframework.security.core.userdetails.User principal =
                 (org.springframework.security.core.userdetails.User) authentication.getPrincipal();
 
-        // 4. Βρίσκουμε το δικό μας User entity (για id + email)
         User user = userRepository.findByUsername(principal.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found after auth"));
 
-        // 5. Παίρνουμε ρόλους
         List<String> roles = principal.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
-        // 6. Γυρνάμε DTO αντί για Map
         LoginResponseDTO dto = new LoginResponseDTO();
         dto.setToken(jwt);
         dto.setType("Bearer");

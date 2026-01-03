@@ -133,7 +133,6 @@ public class ProjectService {
     @Transactional
     public Request assignRequestToProject(Integer projectId, Freelancer freelancer) {
 
-        // (προαιρετικό) Έλεγχος αν έχει ήδη στείλει request στο ίδιο project
         Project project = projectRepository.findById(projectId).orElseThrow();
         for (Request r : project.getRequests()) {
             if (r.getFreelancer() != null &&
@@ -143,18 +142,10 @@ public class ProjectService {
         }
 
         Request request = new Request();
-
-        // freelancer side
         freelancer.getRequests().add(request);
         request.setFreelancer(freelancer);
-
-        // project side
         project.getRequests().add(request);
         request.setProject(project);
-
-        // Αν έχεις RequestRepository, εδώ κανονικά:
-        // return requestRepository.save(request);
-        // αλλιώς, αν έχεις cascade από Project/Freelancer, μπορεί να σωθεί έμμεσα.
         return request;
     }
 
@@ -240,27 +231,21 @@ public class ProjectService {
     @Transactional
     public Map<String, Object> getAvailableProjectsForFreelancer(Freelancer freelancer) {
 
-        // 1. Όλα τα accepted projects
         List<Project> acceptedProjects = getAcceptedProjects();
 
-        // 2. Projects που έχει ήδη κάνει request ο freelancer
         List<Project> requestedProjects =
                 getRequestedProjects(acceptedProjects, freelancer.getRequests());
 
-        // 3. Projects που δεν έχει κάνει request και δεν έχουν assignment
         List<Project> notRequestedNotAssigned =
                 getNotRequestedAndUnassignedProjects(acceptedProjects, requestedProjects);
 
-        // 4. Projects που δεν έχουν ξεπεράσει την ημερομηνία
         List<Project> available =
                 getProjectNotOutDated(notRequestedNotAssigned);
 
-        // 5. Μετατροπή σε DTOs
         List<ProjectSummaryDTO> dtoList = available.stream()
                 .map(this::toProjectSummaryDTO)
                 .toList();
 
-        // 6. Επιστρέφουμε και τα δύο πράγματα
         Map<String, Object> body = new HashMap<>();
         body.put("notRequestedProjects", dtoList);
         body.put("freelancerVerified", freelancer.getVerified());
@@ -291,7 +276,6 @@ public class ProjectService {
 
         Client currentClient = clientService.getCurrentClient();
         if (currentClient == null) {
-            // Το πιάνουμε μετά στον controller ως 403
             throw new IllegalStateException("No client is associated with the current user");
         }
 
@@ -308,7 +292,6 @@ public class ProjectService {
         project.setPaymentAmount(dto.getPaymentAmount());
         project.setDeadline(dto.getDeadline());
         project.setClient(client);
-        // ό,τι άλλα πεδία έχεις (status = Pending κλπ)
 
         return project;
     }
