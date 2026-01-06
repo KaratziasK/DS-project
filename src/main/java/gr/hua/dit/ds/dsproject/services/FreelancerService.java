@@ -4,6 +4,7 @@ import gr.hua.dit.ds.dsproject.dto.*;
 import gr.hua.dit.ds.dsproject.entities.*;
 import gr.hua.dit.ds.dsproject.repositories.*;
 import jakarta.transaction.Transactional;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -53,13 +54,20 @@ public class FreelancerService {
         dto.setFirstName(freelancer.getFirstName());
         dto.setLastName(freelancer.getLastName());
         dto.setPhone(freelancer.getPhone());
-
         dto.setSkills(freelancer.getSkills());
-
         dto.setVerified(freelancer.getVerified());
+
+        if (freelancer.getUser() != null) {
+            dto.setEmail(freelancer.getUser().getEmail());
+            dto.setUsername(freelancer.getUser().getUsername());
+        } else {
+            dto.setEmail(null);
+            dto.setUsername(null);
+        }
 
         return dto;
     }
+
 
     @Transactional
     public List<FreelancerSummaryDTO> getNotVerifiedFreelancerDTOs() {
@@ -260,6 +268,20 @@ public class FreelancerService {
         Freelancer freelancer = getCurrentFreelancer();
         Request newRequest = projectService.assignRequestToProject(projectId, freelancer);
         return requestService.toRequestSummaryDTO(newRequest);
+    }
+
+    public FreelancerMeResponse me() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        Freelancer f = freelancerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Freelancer not found for username: " + username));
+
+        return new FreelancerMeResponse(
+                f.getId(),
+                f.getUser().getEmail(),
+                Boolean.TRUE.equals(f.getVerified())
+        );
     }
 
 }

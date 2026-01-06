@@ -1,9 +1,6 @@
 package gr.hua.dit.ds.dsproject.controllers;
 
-import gr.hua.dit.ds.dsproject.dto.AssignedProjectDTO;
-import gr.hua.dit.ds.dsproject.dto.ProjectCreateDTO;
-import gr.hua.dit.ds.dsproject.dto.ProjectSummaryDTO;
-import gr.hua.dit.ds.dsproject.dto.RequestSummaryDTO;
+import gr.hua.dit.ds.dsproject.dto.*;
 import gr.hua.dit.ds.dsproject.services.ClientService;
 import gr.hua.dit.ds.dsproject.services.FreelancerService;
 import gr.hua.dit.ds.dsproject.services.ProjectService;
@@ -32,6 +29,48 @@ public class ProjectController {
     ) {
         this.projectService = projectService;
         this.freelancerService = freelancerService;
+    }
+
+    @Secured("ROLE_ADMIN")
+    @GetMapping("/admin-use/pending")
+    public ResponseEntity<List<ProjectAdminDTO>> getPendingProjects() {
+        return ResponseEntity.ok(projectService.getPendingProjectAdminDTOs());
+    }
+
+    @Secured("ROLE_ADMIN")
+    @PostMapping("/admin-use/{projectId}/accept")
+    public ResponseEntity<ProjectAdminDTO> acceptProject(@PathVariable int projectId) {
+        return ResponseEntity.ok(projectService.acceptProjectAdmin(projectId));
+    }
+
+    @Secured("ROLE_ADMIN")
+    @PostMapping("/admin-use/{projectId}/reject")
+    public ResponseEntity<ProjectAdminDTO> rejectProject(@PathVariable int projectId) {
+        return ResponseEntity.ok(projectService.rejectProjectAdmin(projectId));
+    }
+
+    @Secured("ROLE_ADMIN")
+    @GetMapping("/admin-use/rejected")
+    public ResponseEntity<List<ProjectAdminDTO>> getRejectedProjects() {
+        return ResponseEntity.ok(projectService.getRejectedProjectAdminDTOs());
+    }
+
+    @Secured("ROLE_ADMIN")
+    @GetMapping("/admin-use/outdated")
+    public ResponseEntity<List<ProjectAdminDTO>> getAllOutdatedProjects() {
+        return ResponseEntity.ok(projectService.getAllOutdatedProjectAdminDTOs());
+    }
+
+    @Secured("ROLE_ADMIN")
+    @GetMapping("/admin-use/accepted")
+    public ResponseEntity<List<ProjectAdminDTO>> getAcceptedProjects() {
+        return ResponseEntity.ok(projectService.getAcceptedProjectAdminDTOs());
+    }
+
+    @Secured("ROLE_ADMIN")
+    @GetMapping("/admin-use/all")
+    public ResponseEntity<List<ProjectAdminDTO>> getAllProjects() {
+        return ResponseEntity.ok(projectService.getAllProjectAdminDTOs());
     }
 
 
@@ -70,41 +109,10 @@ public class ProjectController {
     }
 
     @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use/pending")
-    public ResponseEntity<List<ProjectSummaryDTO>> getPendingProjects() {
-        return ResponseEntity.ok(projectService.getPendingProjectDTOs());
-    }
-
-    @Secured("ROLE_ADMIN")
-    @PostMapping("/admin-use/{projectId}/accept")
-    public ResponseEntity<ProjectSummaryDTO> acceptProject(@PathVariable int projectId) {
-        ProjectSummaryDTO dto = projectService.acceptProject(projectId);
-        return ResponseEntity.ok(dto);
-    }
-
-    @Secured("ROLE_ADMIN")
-    @PostMapping("/admin-use/{projectId}/reject")
-    public ResponseEntity<ProjectSummaryDTO> rejectProject(@PathVariable int projectId) {
-        return ResponseEntity.ok(projectService.rejectProject(projectId));
-    }
-
-    @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use/rejected")
-    public ResponseEntity<List<ProjectSummaryDTO>> getRejectedProjects() {
-        return ResponseEntity.ok(projectService.getRejectedProjectDTOs());
-    }
-
-    @Secured("ROLE_ADMIN")
     @DeleteMapping("/admin-use/rejected/{projectId}")
     public ResponseEntity<Void> deleteRejectedProject(@PathVariable int projectId) {
         projectService.deleteProject(projectId);
         return ResponseEntity.noContent().build();
-    }
-
-    @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use/outdated")
-    public ResponseEntity<List<ProjectSummaryDTO>> getAllOutdatedProjects() {
-        return ResponseEntity.ok(projectService.getAllOutdatedProjectDTOs());
     }
 
     @Secured("ROLE_CLIENT")
@@ -143,17 +151,20 @@ public class ProjectController {
         return ResponseEntity.ok(projectService.getCompletedProjectsForCurrentClient());
     }
 
-    @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use/accepted")
-    public ResponseEntity<List<ProjectSummaryDTO>> getAcceptedProjects() {
-        return ResponseEntity.ok(projectService.getAcceptedProjectDTOs());
+    @Secured("ROLE_CLIENT")
+    @GetMapping("/client-use/{projectId}")
+    public ResponseEntity<ProjectDetailsForClientResponse> getProjectDetailsForClient(
+            @PathVariable int projectId
+    ) {
+        return ResponseEntity.ok(projectService.getProjectDetailsForCurrentClient(projectId));
     }
 
-    @Secured("ROLE_ADMIN")
-    @GetMapping("/admin-use/all")
-    public ResponseEntity<List<ProjectSummaryDTO>> getAllProjects() {
-        return ResponseEntity.ok(projectService.getAllProjectDTOs());
+    @Secured("ROLE_FREELANCER")
+    @GetMapping("/{projectId}/freelancer-use/details")
+    public ResponseEntity<ProjectDetailsForFreelancerResponse> projectDetailsForFreelancer(@PathVariable int projectId) {
+        return ResponseEntity.ok(projectService.getProjectDetailsForFreelancer(projectId));
     }
+
 
     private ResponseEntity<?> buildValidationErrorResponse(BindingResult bindingResult) {
         Map<String, String> errors = new HashMap<>();

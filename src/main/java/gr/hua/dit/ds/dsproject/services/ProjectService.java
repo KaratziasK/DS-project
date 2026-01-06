@@ -1,30 +1,30 @@
 package gr.hua.dit.ds.dsproject.services;
 
 
-import gr.hua.dit.ds.dsproject.dto.AssignedProjectDTO;
-import gr.hua.dit.ds.dsproject.dto.ProjectCreateDTO;
-import gr.hua.dit.ds.dsproject.dto.ProjectSummaryDTO;
+import gr.hua.dit.ds.dsproject.dto.*;
 import gr.hua.dit.ds.dsproject.entities.*;
 import gr.hua.dit.ds.dsproject.repositories.ProjectRepository;
+import gr.hua.dit.ds.dsproject.repositories.RequestRepository;
 import gr.hua.dit.ds.dsproject.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final ClientService clientService;
+    private final CurrentUserService currentUserService;
+    private final RequestRepository requestRepository;
 
-    public ProjectService(ProjectRepository projectRepository, ClientService clientService) {
+    public ProjectService(ProjectRepository projectRepository, ClientService clientService,CurrentUserService currentUserService, RequestRepository requestRepository) {
         this.projectRepository = projectRepository;
         this.clientService = clientService;
+        this.currentUserService = currentUserService;
+        this.requestRepository = requestRepository;
     }
 
     @Transactional
@@ -151,13 +151,9 @@ public class ProjectService {
 
     @Transactional
     public void deleteProject(Integer projectId) {
-        List<Project> projects = projectRepository.findAll();
-        for(Project p : projects){
-            if(p.getId().equals(projectId)){
-                projectRepository.delete(p);
-            }
-        }
+        projectRepository.deleteById(projectId);
     }
+
 
     @Transactional
     public List<Project> getUnassignedProjects(Client  client) {
@@ -449,6 +445,153 @@ public class ProjectService {
         return projects.stream()
                 .map(this::toProjectSummaryDTO)
                 .toList();
+    }
+    private ProjectAdminDTO toProjectAdminDTO(Project project) {
+        ProjectAdminDTO dto = new ProjectAdminDTO();
+
+        dto.setId(project.getId());
+        dto.setTitle(project.getTitle());
+        dto.setDescription(project.getDescription());
+        dto.setPaymentAmount(project.getPaymentAmount());
+        dto.setDeadline(project.getDeadline());
+        dto.setProjectStatus(project.getProjectStatus().name());
+
+        if (project.getClient() != null) {
+            ClientSummaryDTO c = new ClientSummaryDTO();
+            c.setId(project.getClient().getId());
+            c.setFirstName(project.getClient().getFirstName());
+            c.setLastName(project.getClient().getLastName());
+            dto.setClient(c);
+        }
+
+        return dto;
+    }
+
+    @Transactional
+    public List<ProjectAdminDTO> getPendingProjectAdminDTOs() {
+        return getProjectsPending().stream().map(this::toProjectAdminDTO).toList();
+    }
+
+    @Transactional
+    public List<ProjectAdminDTO> getAllProjectAdminDTOs() {
+        return getProjects().stream().map(this::toProjectAdminDTO).toList();
+    }
+
+    @Transactional
+    public List<ProjectAdminDTO> getRejectedProjectAdminDTOs() {
+        return getRejectedProjects().stream().map(this::toProjectAdminDTO).toList();
+    }
+
+    @Transactional
+    public List<ProjectAdminDTO> getAllOutdatedProjectAdminDTOs() {
+        return getAllOutdatedProjects().stream().map(this::toProjectAdminDTO).toList();
+    }
+
+    @Transactional
+    public List<ProjectAdminDTO> getAcceptedProjectAdminDTOs() {
+        return getAcceptedProjects().stream().map(this::toProjectAdminDTO).toList();
+    }
+
+    @Transactional
+    public ProjectAdminDTO acceptProjectAdmin(int projectId) {
+        Project project = getProject(projectId);
+        project.setProjectStatus(Status.Accepted);
+        Project saved = saveProject(project);
+        return toProjectAdminDTO(saved);
+    }
+
+    @Transactional
+    public ProjectAdminDTO rejectProjectAdmin(int projectId) {
+        Project project = getProject(projectId);
+        project.setProjectStatus(Status.Rejected);
+        Project saved = saveProject(project);
+        return toProjectAdminDTO(saved);
+    }
+    public ProjectDetailsForFreelancerResponse getProjectDetailsForFreelancer(int projectId) {
+
+        Freelancer freelancer = currentUserService.getCurrentFreelancer();
+
+        boolean verified = freelancer.getVerified();
+
+        Project p = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        // Θέλεις κάτι τέτοιο από RequestRepository:
+        // Optional<Request> reqOpt = requestRepository.findByProjectIdAndFreelancerId(projectId, freelancer.getId());
+        Optional<Request> reqOpt = requestRepository.findByProjectIdAndFreelancerId(projectId, freelancer.getId());
+
+        boolean requested = reqOpt.isPresent();
+        String myRequestStatus = reqOpt.map(r -> r.getRequestStatus().name()).orElse(null);
+
+        String clientName = null;
+        if (p.getClient() != null) {
+            clientName = p.getClient().getFirstName() + " " + p.getClient().getLastName();
+        }
+
+        ProjectDetailsDTO projectDto = new ProjectDetailsDTO(
+                p.getId(),
+                p.getTitle(),
+                p.getDescription(),
+                p.getPaymentAmount(),
+                p.getProjectStatus().name(),   // ή String αν είναι ήδη String
+                p.getDeadline(),
+                clientName
+        );
+
+        return new ProjectDetailsForFreelancerResponse(verified, requested, myRequestStatus, projectDto);
+    }
+
+    @Transactional
+    public ProjectDetailsForClientResponse getProjectDetailsForCurrentClient(int projectId) {
+
+        Client currentClient = clientService.getCurrentClient();
+        if (currentClient == null) {
+            throw new IllegalStateException("No client is associated with the current user");
+        }
+
+        Project p = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        // ✅ Ownership check
+        if (p.getClient() == null || p.getClient().getId() == null ||
+                !p.getClient().getId().equals(currentClient.getId())) {
+            throw new IllegalStateException("You are not allowed to view this project");
+        }
+
+        return toProjectDetailsForClientResponse(p);
+    }
+
+    private ProjectDetailsForClientResponse toProjectDetailsForClientResponse(Project p) {
+        ProjectDetailsForClientResponse dto = new ProjectDetailsForClientResponse();
+
+        dto.setId(p.getId());
+        dto.setTitle(p.getTitle());
+        dto.setDescription(p.getDescription());
+        dto.setPaymentAmount(p.getPaymentAmount());
+        dto.setDeadline(p.getDeadline());
+        dto.setProjectStatus(p.getProjectStatus() != null ? p.getProjectStatus().name() : null);
+
+        // ✅ Assigned freelancers
+        // Αν το σύστημά σου έχει μόνο 1 assignment -> 1 freelancer:
+        List<ProjectDetailsForClientResponse.AssignedFreelancerDTO> assigned = new ArrayList<>();
+
+        if (p.getAssignment() != null && p.getAssignment().getFreelancer() != null) {
+            Freelancer f = p.getAssignment().getFreelancer();
+
+            ProjectDetailsForClientResponse.AssignedFreelancerDTO fdto =
+                    new ProjectDetailsForClientResponse.AssignedFreelancerDTO();
+
+            // ⚠️ Αν το Freelancer έχει user αλλά όχι firstName/lastName, άλλαξε ανάλογα
+            fdto.setId(f.getId());
+            fdto.setFirstName(f.getFirstName());   // αν δεν υπάρχει -> βάλε f.getUser().getFirstName()
+            fdto.setLastName(f.getLastName());     // αν δεν υπάρχει -> βάλε f.getUser().getLastName()
+            fdto.setSkills(f.getSkills());         // αν δεν υπάρχει -> βάλε String.join(", ", f.getSkillsList())
+
+            assigned.add(fdto);
+        }
+
+        dto.setAssignedFreelancers(assigned);
+        return dto;
     }
 
 }

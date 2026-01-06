@@ -8,6 +8,8 @@ public class ClientDTO {
     private String firstName;
     private String lastName;
     private String phone;
+    private String email;
+    private String username;
 
     private List<ProjectSummaryDTO> projects;
 
@@ -49,5 +51,21 @@ public class ClientDTO {
 
     public void setProjects(List<ProjectSummaryDTO> projects) {
         this.projects = projects;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

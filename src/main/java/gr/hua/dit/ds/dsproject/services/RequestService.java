@@ -105,21 +105,29 @@ public class RequestService {
         );
 
         if (request.getProject() != null) {
+            dto.setProjectId(request.getProject().getId());
             dto.setProjectTitle(request.getProject().getTitle());
             dto.setProjectDescription(request.getProject().getDescription());
+            if (request.getProject().getClient() != null) {
+                dto.setClientId(request.getProject().getClient().getId());
+            }
         }
 
         dto.setDateSubmitted(request.getDateSubmitted());
 
-        if (request.getFreelancer() != null &&
-                request.getFreelancer().getUser() != null) {
-            dto.setFreelancerUsername(
-                    request.getFreelancer().getUser().getUsername()
-            );
+        if (request.getFreelancer() != null) {
+            dto.setFreelancerId(request.getFreelancer().getId());
+
+            if (request.getFreelancer().getUser() != null) {
+                dto.setFreelancerUsername(
+                        request.getFreelancer().getUser().getUsername()
+                );
+            }
         }
 
         return dto;
     }
+
 
     @Transactional
     public List<RequestSummaryDTO> toRequestSummaryDTOs(List<Request> requests) {

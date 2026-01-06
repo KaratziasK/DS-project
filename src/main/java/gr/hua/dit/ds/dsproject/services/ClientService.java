@@ -86,6 +86,11 @@ public class ClientService {
         dto.setLastName(client.getLastName());
         dto.setPhone(client.getPhone());
 
+        if (client.getUser() != null) {
+            dto.setEmail(client.getUser().getEmail());
+            dto.setUsername(client.getUser().getUsername());
+        }
+
         if (client.getProjects() != null) {
             List<ProjectSummaryDTO> projectDTOs = client.getProjects()
                     .stream()
@@ -96,6 +101,7 @@ public class ClientService {
 
         return dto;
     }
+
 
     private ProjectSummaryDTO toProjectSummaryDTO(Project project) {
         ProjectSummaryDTO dto = new ProjectSummaryDTO();

@@ -10,8 +10,9 @@ public class RequestSummaryDTO {
     private LocalDate dateSubmitted;
     private String freelancerUsername;
     private Integer id;
-
-
+    private Integer projectId;
+    private Integer freelancerId;
+    private Integer clientId;
 
     public String getRequestStatus() {
         return requestStatus;
@@ -54,4 +55,27 @@ public class RequestSummaryDTO {
         this.id = id;
     }
 
+    public Integer getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(Integer projectId) {
+        this.projectId = projectId;
+    }
+
+    public Integer getFreelancerId() {
+        return freelancerId;
+    }
+
+    public void setFreelancerId(Integer freelancerId) {
+        this.freelancerId = freelancerId;
+    }
+
+    public Integer getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(Integer clientId) {
+        this.clientId = clientId;
+    }
 }

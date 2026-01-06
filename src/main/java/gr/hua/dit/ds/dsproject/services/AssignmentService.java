@@ -44,16 +44,22 @@ public class AssignmentService {
         dto.setStatus(assignment.getStatus());
 
         if (assignment.getProject() != null) {
-            dto.setProjectName(assignment.getProject().getTitle());
-            dto.setProjectDescription(assignment.getProject().getDescription());
-            dto.setDeadline(assignment.getProject().getDeadline());
+            var project = assignment.getProject();
+
+            dto.setProjectId(project.getId());
+
+            dto.setProjectName(project.getTitle());
+            dto.setProjectDescription(project.getDescription());
+            dto.setDeadline(project.getDeadline());
         }
 
         if (assignment.getFreelancer() != null) {
             var freelancer = assignment.getFreelancer();
 
+            dto.setFreelancerId(freelancer.getId());
+
             dto.setFreelancerFullName(
-                    freelancer.getFirstName() + " " + freelancer.getLastName()
+                    (freelancer.getFirstName() + " " + freelancer.getLastName()).trim()
             );
 
             if (freelancer.getUser() != null) {
@@ -65,9 +71,9 @@ public class AssignmentService {
                 assignment.getProject().getClient() != null) {
 
             var client = assignment.getProject().getClient();
-
+            dto.setClientId(client.getId());
             dto.setClientFullName(
-                    client.getFirstName() + " " + client.getLastName()
+                    (client.getFirstName() + " " + client.getLastName()).trim()
             );
 
             if (client.getUser() != null) {
@@ -77,5 +83,6 @@ public class AssignmentService {
 
         return dto;
     }
+
 
 }

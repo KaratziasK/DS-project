@@ -5,38 +5,45 @@ import java.time.LocalDate;
 public class AssignmentSummaryDTO {
 
     private Integer id;
+    private Integer projectId;
+    private Integer freelancerId;
+
     private String freelancerUsername;
     private String clientUsername;
+
     private LocalDate dateSubmitted;
     private LocalDate deadline;
     private String status;
+
     private String projectName;
     private String projectDescription;
+
     private String freelancerFullName;
     private String clientFullName;
+    private Integer clientId;
 
-    public String getFreelancerFullName() {
-        return freelancerFullName;
-    }
-
-    public void setFreelancerFullName(String freelancerFullName) {
-        this.freelancerFullName = freelancerFullName;
-    }
-
-    public String getClientFullName() {
-        return clientFullName;
-    }
-
-    public void setClientFullName(String clientFullName) {
-        this.clientFullName = clientFullName;
-    }
-
+    public Integer getClientId() { return clientId; }
+    public void setClientId(Integer clientId) { this.clientId = clientId; }
 
     public Integer getId() {
         return id;
     }
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public Integer getProjectId() {
+        return projectId;
+    }
+    public void setProjectId(Integer projectId) {
+        this.projectId = projectId;
+    }
+
+    public Integer getFreelancerId() {
+        return freelancerId;
+    }
+    public void setFreelancerId(Integer freelancerId) {
+        this.freelancerId = freelancerId;
     }
 
     public String getFreelancerUsername() {
@@ -77,7 +84,6 @@ public class AssignmentSummaryDTO {
     public String getProjectName() {
         return projectName;
     }
-
     public void setProjectName(String projectName) {
         this.projectName = projectName;
     }
@@ -85,8 +91,21 @@ public class AssignmentSummaryDTO {
     public String getProjectDescription() {
         return projectDescription;
     }
-
     public void setProjectDescription(String projectDescription) {
         this.projectDescription = projectDescription;
+    }
+
+    public String getFreelancerFullName() {
+        return freelancerFullName;
+    }
+    public void setFreelancerFullName(String freelancerFullName) {
+        this.freelancerFullName = freelancerFullName;
+    }
+
+    public String getClientFullName() {
+        return clientFullName;
+    }
+    public void setClientFullName(String clientFullName) {
+        this.clientFullName = clientFullName;
     }
 }

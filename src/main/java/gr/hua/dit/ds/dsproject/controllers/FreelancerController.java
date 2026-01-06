@@ -96,6 +96,12 @@ public class FreelancerController {
         return ResponseEntity.ok(responseDto);
     }
 
+    @Secured("ROLE_FREELANCER")
+    @GetMapping("/me")
+    public FreelancerMeResponse me() {
+        return freelancerService.me();
+    }
+
     private ResponseEntity<?> buildValidationErrorResponse(BindingResult bindingResult) {
         Map<String, String> errors = new HashMap<>();
 
